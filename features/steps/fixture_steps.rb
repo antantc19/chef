@@ -225,6 +225,11 @@ Before do
         n.deep_array = array
         n.deep_hash = hash
         n
+      end,
+      'empty' => Proc.new do
+        n = Chef::Node.new
+        n.name 'empty'
+        n
       end
     },
     'hash' => {
