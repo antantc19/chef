@@ -64,15 +64,12 @@ class Chef
     class InvalidResourceSpecification < ArgumentError; end
     class SolrConnectionError < RuntimeError; end
     class IllegalChecksumRevert < RuntimeError; end
-    class CookbookVersionConflict < StandardError; end
-    class CookbookVersionUnavailable < StandardError; end
     class CookbookVersionNameMismatch < ArgumentError; end
-    class InvalidCookbookVersion < ArgumentError; end
-    class InvalidVersionConstraint < ArgumentError; end
     class MissingParentDirectory < RuntimeError; end
     class UnresolvableGitReference < RuntimeError; end
     class InvalidEnvironmentRunListSpecification < ArgumentError; end
     class InvalidDataBagItemID < ArgumentError; end
     class InvalidDataBagName < ArgumentError; end
+    class CookbookVersionConflict < ArgumentError ; end
   end
 end
