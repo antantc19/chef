@@ -71,5 +71,8 @@ class Chef
     class InvalidDataBagItemID < ArgumentError; end
     class InvalidDataBagName < ArgumentError; end
     class CookbookVersionConflict < ArgumentError ; end
+    class CookbookVersionUnavailable < StandardError; end
+    class InvalidCookbookVersion < ArgumentError; end
+    class InvalidVersionConstraint < ArgumentError; end
   end
 end
