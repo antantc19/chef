@@ -304,13 +304,17 @@ class Chef
           retry
         end
         raise Timeout::Error, "Timeout connecting to #{url.host}:#{url.port} for #{rest_request.path}, giving up"
-      rescue Net::HTTPFatalError => e
-        if http_retry_count - http_attempts + 1 > 0
-          sleep_time = 1 + (2 ** http_attempts) + rand(2 ** http_attempts)
-          Chef::Log.error("Server returned error for #{url}, retrying #{http_attempts}/#{http_retry_count} in #{sleep_time}s")
-          sleep(sleep_time)
-          retry
+      rescue Net::HTTPFatalError, Net::HTTPServerException => e
+        if (e.kind_of?(Net::HTTPFatalError)) || (e.kind_of?(Net::HTTPServerException) && e.response.code == "403")
+          if http_retry_count - http_attempts + 1 > 0
+            sleep_time = 1 + (2 ** http_attempts) + rand(2 ** http_attempts)
+            Chef::Log.error("Server returned error for #{url}, retrying #{http_attempts}/#{http_retry_count} in #{sleep_time}s")
+            sleep(sleep_time)
+            retry
+          end
         end
+        # mutate the error message so it contains useful info
+        e.message << " url: #{url}"
         raise
       end
     end
