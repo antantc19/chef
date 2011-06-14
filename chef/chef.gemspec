@@ -3,7 +3,7 @@ require 'chef/version'
 
 Gem::Specification.new do |s|
   s.name = 'chef'
-  s.version = "0.10.0.qs.0"
+  s.version = "0.10.0.qs.1"
   s.platform = Gem::Platform::RUBY
   s.has_rdoc = true
   s.extra_rdoc_files = ["README.rdoc", "LICENSE" ]
