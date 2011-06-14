@@ -108,7 +108,9 @@ class Chef
         Chef::Log.info "#{@new_resource} cloning repo #{@new_resource.repository} to #{@new_resource.destination}"
 
         clone_cmd = "git clone #{args.join(' ')} #{@new_resource.repository} #{@new_resource.destination}"
-        shell_out!(clone_cmd, run_options(:command_log_level => :info))
+        retry_git(3) do
+          shell_out!(clone_cmd, run_options(:command_log_level => :info))
+        end
       end
 
       def checkout
@@ -132,7 +134,9 @@ class Chef
         # since we're in a local branch already, just reset to specified revision rather than merge
         fetch_command = "git fetch #{@new_resource.remote} && git fetch #{@new_resource.remote} --tags && git reset --hard #{target_revision}"
         Chef::Log.debug "Fetching updates from #{new_resource.remote} and resetting to revison #{target_revision}"
-        shell_out!(fetch_command, run_options(:cwd => @new_resource.destination))
+        retry_git(3) do
+          shell_out!(fetch_command, run_options(:cwd => @new_resource.destination))
+        end
       end
 
       # Use git-config to setup a remote tracking branches. Could use
@@ -173,7 +177,9 @@ class Chef
       def remote_resolve_reference
         Chef::Log.debug("#{@new_resource} resolving remote reference")
         command = git('ls-remote', @new_resource.repository, @new_resource.revision)
-        shell_out!(command, run_options).stdout
+        retry_git(3) do
+          shell_out!(command, run_options).stdout
+        end
       end
 
       private
@@ -223,6 +229,23 @@ class Chef
           raise Chef::Exceptions::UnresolvableGitReference, msg
         end
         $1
+      end
+
+      def retry_git(max_retries)
+        attempts = 0
+        begin
+          yield()
+        rescue Chef::Exceptions::ShellCommandFailed => e
+          attempts += 1
+          if attempts > max_retries
+            raise e
+          else
+            wait_for = 2 ** attempts
+            Chef::Log.warn("#{e.class.name}: #{new_resource} had an error: #{e.message}: retrying #{attempts}/#{max_retries}, waiting #{wait_for} seconds")
+            sleep wait_for
+            retry
+          end
+        end
       end
 
     end
