@@ -98,7 +98,7 @@ class Chef
           end
           publisher.amqp_client.tx_commit if Chef::Config[:persistent_queue]
         rescue Bunny::ServerDownError, Bunny::ConnectionError, Errno::ECONNRESET
-          publisher.amqp_client.disconnected!
+          publisher.disconnected!
           if (retries += 1) < 2
             Chef::Log.info("Attempting to reconnect to the AMQP broker")
             retry
