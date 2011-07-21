@@ -90,12 +90,22 @@ class Chef
       # in a transaction.
       def publish_object(object_id, object)
         publisher = AmqpClient.instance
+        retries = 0
         begin
           publisher.amqp_client.tx_select if Chef::Config[:persistent_queue]
           publisher.queue_for_object(object_id) do |queue|
             queue.publish(Chef::JSONCompat.to_json(object), :persistent => Chef::Config[:persistent_queue])
           end
           publisher.amqp_client.tx_commit if Chef::Config[:persistent_queue]
+        rescue Bunny::ServerDownError, Bunny::ConnectionError, Errno::ECONNRESET
+          publisher.amqp_client.disconnected!
+          if (retries += 1) < 2
+            Chef::Log.info("Attempting to reconnect to the AMQP broker")
+            retry
+          else
+            Chef::Log.fatal("Could not re-connect to the AMQP broker, giving up")
+            raise
+          end
         rescue
           publisher.amqp_client.tx_rollback if Chef::Config[:persistent_queue]
           raise
