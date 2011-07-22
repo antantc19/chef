@@ -88,6 +88,22 @@ class Chef
       # Uses the publisher to update the object's queue. If
       # Chef::Config[:persistent_queue] is true, the update is wrapped
       # in a transaction.
+      #
+      # If the AMQP connection gets reset between requests, we should
+      # try to reconnect once before giving up. The requests that have
+      # the potential to raise ServerDownError, ConnectionError, or
+      # ECONNRESET are:
+      #
+      # * tx_select
+      # * publish
+      # * tx_commit
+      # * tx_rollback
+      #
+      # If a connection is reset in the middle of a transaction (after
+      # tx_select and before tx_commit), then the ack and all the
+      # publications are forgotten by RabbitMQ.
+      # http://www.rabbitmq.com/faq.html#atomic-operations
+      #
       def publish_object(object_id, object)
         publisher = AmqpClient.instance
         retries = 0
@@ -97,10 +113,10 @@ class Chef
             queue.publish(Chef::JSONCompat.to_json(object), :persistent => Chef::Config[:persistent_queue])
           end
           publisher.amqp_client.tx_commit if Chef::Config[:persistent_queue]
-        rescue Bunny::ServerDownError, Bunny::ConnectionError, Errno::ECONNRESET
+        rescue Bunny::ServerDownError, Bunny::ConnectionError, Errno::ECONNRESET => e
           publisher.disconnected!
           if (retries += 1) < 2
-            Chef::Log.info("Attempting to reconnect to the AMQP broker")
+            Chef::Log.info("Attempting to reconnect to the AMQP broker - #{e.class}")
             retry
           else
             Chef::Log.fatal("Could not re-connect to the AMQP broker, giving up")
