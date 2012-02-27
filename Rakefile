@@ -17,6 +17,8 @@
 # limitations under the License.
 #
 
+require File.dirname(__FILE__) + '/chef/lib/chef/version'
+
 gems = %w[chef chef-server-api chef-server-webui chef-solr chef-expander chef-server]
 require 'rubygems'
 
@@ -38,6 +40,15 @@ desc "Uninstall the chef gems"
 task :uninstall do
   gems.reverse.each do |dir|
     Dir.chdir(dir) { sh "rake uninstall" }
+  end
+end
+
+desc "Build it and ship it"
+task :ship => [:clean, :gem] do
+  sh("git tag #{Chef::VERSION}")
+  sh("git push opscode --tags")
+  Dir[File.expand_path("../pkg/*.gem", __FILE__)].reverse.each do |built_gem|
+    sh("gem push #{built_gem}")
   end
 end
 
