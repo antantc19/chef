@@ -57,6 +57,15 @@ task :uninstall do
   sh %{gem uninstall #{GEM_NAME} -x -v #{Chef::VERSION} }
 end
 
+desc "Build it and ship it"
+task :ship => [:clean, :gem] do
+  sh("git tag #{Chef::VERSION}")
+  sh("git push opscode --tags")
+  Dir[File.expand_path("../pkg/*.gem", __FILE__)].reverse.each do |built_gem|
+    sh("gem push #{built_gem}")
+  end
+end
+
 RONN_OPTS = "--manual='Chef Manual' --organization='Chef #{Chef::VERSION}' --date='#{Time.new.strftime('%Y-%m-%d')}'"
 
 namespace :docs do
