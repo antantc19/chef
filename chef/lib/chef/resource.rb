@@ -140,7 +140,7 @@ F
     # information from resources to describe changes made to the system.
     def self.state_attrs(*attr_names)
       @state_attrs ||= []
-      @state_attrs = attr_names unless attr_names.empty?
+      @state_attrs += attr_names unless attr_names.empty?
 
       # Return *all* state_attrs that this class has, including inherited ones
       if superclass.respond_to?(:state_attrs)
