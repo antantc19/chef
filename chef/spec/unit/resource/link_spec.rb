@@ -51,6 +51,14 @@ describe Chef::Resource::Link do
     @resource.target_file.should eql("fakey_fakerton")
   end
 
+  it "uses the target_file as the identity attribute" do
+    @resource.identity.should == "fakey_fakerton"
+  end
+
+  it "has state attributes :link_type, :to, and permissions attributes" do
+    @resource.state.keys.should =~ [:owner, :mode, :group, :link_type, :to]
+  end
+
   it "should accept a string as the link source via 'to'" do
     lambda { @resource.to "/tmp" }.should_not raise_error(ArgumentError)
   end

@@ -26,6 +26,17 @@ class Chef
 
        provides :link, :on_platform  => :all
 
+       identity_attr :target_file
+
+       state_attrs :link_type, :to
+
+       state_attrs :owner, :group, :mode
+
+       # By default, windows gets `state_attrs :rights, :deny_rights`
+       if Platform.windows?
+         state_attrs :rights, :deny_rights
+       end
+
       def initialize(name, run_context=nil)
         super
         @resource_name = :link
