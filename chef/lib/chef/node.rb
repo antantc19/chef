@@ -678,5 +678,9 @@ class Chef
       self.from_file(attribute_filename)
       self
     end
+
+    def platform?(*args)
+      raise Chef::Exceptions::InvalidAttribute, "The platform? method is not supported in attributes"
+    end
   end
 end

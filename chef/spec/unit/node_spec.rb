@@ -169,6 +169,10 @@ describe Chef::Node do
       @node.attribute[:sunshine].should eql("is bright")
     end
 
+    it "should not let you believe you can call platform?" do
+      lambda { @node.platform?("ubuntu") }.should raise_error(Chef::Exceptions::InvalidAttribute)
+    end
+
     it "should allow you get get an attribute via method_missing" do
       @node.sunshine "is bright"
       @node.sunshine.should eql("is bright")
@@ -738,7 +742,5 @@ describe Chef::Node do
         Chef::Node.create_design_document
       end
     end
-
   end
-
 end
