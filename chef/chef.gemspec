@@ -5,8 +5,7 @@ Gem::Specification.new do |s|
   s.name = 'chef'
   s.version = Chef::VERSION
   s.platform = Gem::Platform::RUBY
-  s.has_rdoc = true
-  s.extra_rdoc_files = ["README.rdoc", "LICENSE" ]
+  s.extra_rdoc_files = ["README.md", "CONTRIBUTING.md", "LICENSE" ]
   s.summary = "A systems integration framework, built to bring the benefits of configuration management to your entire infrastructure."
   s.description = s.summary
   s.author = "Adam Jacob"
