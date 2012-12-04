@@ -54,6 +54,74 @@ class Chef
         changes
       end
 
+      def target_dacl
+        return nil if resource.rights.nil? && resource.deny_rights.nil? && resource.mode.nil?
+        acls = nil
+
+        if !resource.deny_rights.nil?
+          acls = [] if acls.nil?
+
+          resource.deny_rights.each do |rights|
+            mask = calculate_mask(rights[:permissions])
+            [ rights[:principals] ].flatten.each do |principal|
+              sid = get_sid(principal)
+              flags = calculate_flags(rights)
+              acls.push ACE.access_denied(sid, mask, flags)
+            end
+          end
+        end
+
+        if !resource.rights.nil?
+          acls = [] if acls.nil?
+
+          resource.rights.each do |rights|
+            mask = calculate_mask(rights[:permissions])
+            [ rights[:principals] ].flatten.each do |principal|
+              sid = get_sid(principal)
+              flags = calculate_flags(rights)
+              acls.push ACE.access_allowed(sid, mask, flags)
+            end
+          end
+        end
+
+        if !resource.mode.nil?
+          acls = [] if acls.nil?
+
+          mode = (resource.mode.respond_to?(:oct) ? resource.mode.oct : resource.mode.to_i) & 0777
+
+          owner = target_owner
+          if owner
+            acls += mode_ace(owner, (mode & 0700) >> 6)
+          elsif mode & 0700 != 0
+            Chef::Log.warn("Mode #{sprintf("%03o", mode)} includes bits for the owner, but owner is not specified")
+          end
+
+          group = target_group
+          if group
+            acls += mode_ace(group, (mode & 070) >> 3)
+          elsif mode & 070 != 0
+            Chef::Log.warn("Mode #{sprintf("%03o", mode)} includes bits for the group, but group is not specified")
+          end
+
+          acls += mode_ace(SID.Everyone, (mode & 07))
+        end
+
+        acls.nil? ? nil : Chef::ReservedNames::Win32::Security::ACL.create(acls)
+      end
+
+      def target_group
+        return nil if resource.group.nil?
+        get_sid(resource.group)
+      end
+
+      def target_inherits
+        resource.inherits
+      end
+
+      def target_owner
+        return nil if resource.owner.nil?
+        get_sid(resource.owner)
+      end
       private
 
       # Compare the actual ACL on a resource with the ACL we want.  This
@@ -237,74 +305,6 @@ class Chef
         flags
       end
 
-      def target_dacl
-        return nil if resource.rights.nil? && resource.deny_rights.nil? && resource.mode.nil?
-        acls = nil
-
-        if !resource.deny_rights.nil?
-          acls = [] if acls.nil?
-
-          resource.deny_rights.each do |rights|
-            mask = calculate_mask(rights[:permissions])
-            [ rights[:principals] ].flatten.each do |principal|
-              sid = get_sid(principal)
-              flags = calculate_flags(rights)
-              acls.push ACE.access_denied(sid, mask, flags)
-            end
-          end
-        end
-
-        if !resource.rights.nil?
-          acls = [] if acls.nil?
-
-          resource.rights.each do |rights|
-            mask = calculate_mask(rights[:permissions])
-            [ rights[:principals] ].flatten.each do |principal|
-              sid = get_sid(principal)
-              flags = calculate_flags(rights)
-              acls.push ACE.access_allowed(sid, mask, flags)
-            end
-          end
-        end
-
-        if !resource.mode.nil?
-          acls = [] if acls.nil?
-
-          mode = (resource.mode.respond_to?(:oct) ? resource.mode.oct : resource.mode.to_i) & 0777
-
-          owner = target_owner
-          if owner
-            acls += mode_ace(owner, (mode & 0700) >> 6)
-          elsif mode & 0700 != 0
-            Chef::Log.warn("Mode #{sprintf("%03o", mode)} includes bits for the owner, but owner is not specified")
-          end
-
-          group = target_group
-          if group
-            acls += mode_ace(group, (mode & 070) >> 3)
-          elsif mode & 070 != 0
-            Chef::Log.warn("Mode #{sprintf("%03o", mode)} includes bits for the group, but group is not specified")
-          end
-
-          acls += mode_ace(SID.Everyone, (mode & 07))
-        end
-
-        acls.nil? ? nil : Chef::ReservedNames::Win32::Security::ACL.create(acls)
-      end
-
-      def target_group
-        return nil if resource.group.nil?
-        sid = get_sid(resource.group)
-      end
-
-      def target_inherits
-        resource.inherits
-      end
-
-      def target_owner
-        return nil if resource.owner.nil?
-        sid = get_sid(resource.owner)
-      end
     end
   end
 end
