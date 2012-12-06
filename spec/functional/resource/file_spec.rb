@@ -54,7 +54,7 @@ describe Chef::Resource::File do
 
   it_behaves_like "a file resource"
 
-  describe "reading file security metadata for reporting", :focus => true do
+  describe "reading file security metadata for reporting on unix",:unix_only => true, :focus => true do
     context "when the target file doesn't exist" do
       before do
         resource.action(:create)
@@ -258,6 +258,150 @@ describe Chef::Resource::File do
           current_resource.mode.should == expected_mode
         end
       end
+    end
+  end
+
+  describe "reading file security metadata for reporting on windows",:windows_only => true, :focus => true do
+
+    ALL_EXPANDED_PERMISSIONS = ["generic read",
+                                "generic write",
+                                "generic execute",
+                                "generic all",
+                                "delete",
+                                "read permissions",
+                                "change permissions",
+                                "take ownership",
+                                "synchronize",
+                                "access system security",
+                                "read data / list directory",
+                                "write data / add file",
+                                "append data / add subdirectory",
+                                "read extended attributes",
+                                "write extended attributes",
+                                "execute / traverse",
+                                "delete child",
+                                "read attributes",
+                                "write attributes"]
+
+
+    context "when the target file doesn't exist" do
+
+      # Windows reporting data should look like this (+/- ish):
+      # { "owner" => "bob", "checksum" => "ffff", "access control" => { "bob" => { "permissions" => ["perm1", "perm2", ...], "flags" => [] }}}
+
+
+      before do
+        resource.action(:create)
+      end
+
+      it "has empty values for file metadata in 'current_resource'" do
+        current_resource.owner.should be_nil
+        current_resource.expanded_rights.should be_nil
+      end
+
+      context "and no security metadata is specified in new_resource" do
+        it "sets the metadata values on the new_resource as strings after creating" do
+          resource.run_action(:create)
+          # todo: most stable way to specify?
+          resource.owner.should == etc.getpwuid(process.uid).name
+          resource.state[:expanded_rights].should == { "CURRENTUSER" => { "permissions" => ALL_EXPANDED_PERMISSIONS, "flags" => [] }}
+          resource.state[:expanded_deny_rights].should == {}
+          resource.state[:inherits].should be_true
+        end
+      end
+
+
+      context "and owner is specified with a string (username) in new_resource" do
+
+        # todo/bug: duplicated from the "securable resource" tests
+        let(:expected_user_name) { 'Guest' }
+
+        before do
+          resource.owner(expected_user_name)
+          resource.run_action(:create)
+        end
+
+        it "sets the owner on new_resource to the username (string) of the desired owner" do
+          resource.owner.should == expected_user_name
+        end
+
+      end
+
+      context "and owner is specified with a fully qualified domain user" do
+
+        # todo: duplicated from "securable resource"
+        let(:expected_user_name) { 'domain\user' }
+
+        before do
+          resource.owner(expected_user_name)
+          resource.run_action(:create)
+        end
+
+        it "sets the owner on new_resource to the fully qualified name of the desired owner" do
+          resource.owner.should == expected_user_name
+        end
+      end
+
+    end
+
+    context "when the target file exists" do
+      before do
+        fileutils.touch(resource.path)
+        resource.action(:create)
+      end
+
+      context "and no security metadata is specified in new_resource" do
+        it "sets the current values on current resource as strings" do
+          # todo: most stable way to specify?
+          current_resource.owner.should == etc.getpwuid(process.uid).name
+          current_resource.expanded_rights.should == { "CURRENTUSER" => ALL_EXPANDED_PERMISSIONS }
+        end
+      end
+
+      context "and owner is specified with a string (username) in new_resource" do
+
+        let(:expected_user_name) { etc.getpwuid(process.uid).name }
+
+        before do
+          resource.owner(expected_user_name)
+        end
+
+        it "sets the owner on current_resource to the username (string) of the desired owner" do
+          current_resource.owner.should == expected_user_name
+        end
+
+      end
+
+      context "and owner is specified as a fully qualified 'domain\\user' in new_resource" do
+
+        let(:expected_user_name) { 'domain\user' }
+
+        before do
+          resource.owner(expected_user_name)
+        end
+
+        it "sets the owner on current_resource to the fully qualified name of the desired owner" do
+          current_resource.owner.should == expected_uid
+        end
+      end
+
+      context "and access rights are specified on the new_resource" do
+        # TODO: before do blah
+
+        it "sets the expanded_rights on the current resource" do
+          pending
+        end
+      end
+
+      context "and no access rights are specified on the current resource" do
+        # TODO: before do blah
+
+        it "sets the expanded rights on the current resource" do
+          pending
+        end
+      end
+
+
     end
   end
 
