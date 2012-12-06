@@ -187,12 +187,23 @@ class Chef
           including_class.rights_attribute(:deny_rights)
         end
 
+        # Variables used for ScanAccessControl to store before/after state.
+        attr_accessor :expanded_rights
+        attr_accessor :expanded_deny_rights
+
         def inherits(arg=nil)
           set_or_return(
             :inherits,
             arg,
             :kind_of => [ TrueClass, FalseClass ]
           )
+        end
+
+        def initialize(*args)
+          super
+          @inherits = true
+          @expanded_rights = {}
+          @expanded_deny_rights = {}
         end
       end
 

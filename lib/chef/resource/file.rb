@@ -29,12 +29,40 @@ class Chef
 
       identity_attr :path
 
-      if Platform.windows?
-        # Use Windows rights instead of standard *nix permissions
-        state_attrs :checksum, :rights, :deny_rights
-      else
+      # Configure state attributes for windows or unix.
+      # TODO: would be better to have separate subclasses for each and use
+      # platform-specific resources
+
+      def self.use_windows_state_attrs!
+        # Chef's implementation of windows file security mostly just abstracts
+        # the "basic" security settings on windows, but like everything else in
+        # windows there are more options if you click the "advanced" button.
+        # It's possible that running chef may remove "advanced" permissions (or
+        # set them, if the user specifies a hex integer instead of the
+        # shortcuts provided); therefore, when describing windows access
+        # controls, chef must report the before/after in terms of "advanced"
+        # permissions or else you may not see a change that occurred.
+        #
+        # This means that we can't describe file security settings with the
+        # same data structures used by the resource to set them, so we need a
+        # separate place to store this information.
+        state_attrs :checksum, :expanded_rights, :expanded_deny_rights, :inherits
+      end
+
+      def self.use_unix_state_attrs!
         state_attrs :checksum, :owner, :group, :mode
       end
+
+      def self.setup_state_attrs!
+        if Platform.windows?
+          # Use Windows rights instead of standard *nix permissions
+          use_windows_state_attrs!
+        else
+          use_unix_state_attrs!
+        end
+      end
+
+      setup_state_attrs!
 
       provides :file, :on_platforms => :all
 

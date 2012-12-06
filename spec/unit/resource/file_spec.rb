@@ -76,16 +76,33 @@ describe Chef::Resource::File do
     lambda { @resource.path Hash.new }.should raise_error(ArgumentError)
   end
 
-  describe "when it has a path, owner, group, mode, and checksum" do
+  describe "when it has all state attributes set" do
     before do
       @resource.path("/tmp/foo.txt")
-      @resource.owner("root")
-      @resource.group("wheel")
-      @resource.mode("0644")
-      @resource.checksum("1" * 64)
     end
 
-    context "on unix", :unix_only do
+    context "on unix or windows" do
+      it "configures the right state attrs for the platform" do
+        # make sure setup_state_attrs! is called to setup platform specific
+        # state_attrs. Tests below setup state attrs manually.
+        Chef::Resource::File.state_attrs.should include(:checksum)
+      end
+    end
+
+    context "on unix" do
+      before do
+        Chef::Resource::File.use_unix_state_attrs!
+
+        @resource.owner("root")
+        @resource.group("wheel")
+        @resource.mode("0644")
+        @resource.checksum("1" * 64)
+      end
+
+      after do
+        Chef::Resource::File.setup_state_attrs!
+      end
+
       it "describes its state" do
         state = @resource.state
         state[:owner].should == "root"
@@ -95,9 +112,48 @@ describe Chef::Resource::File do
       end
     end
 
-    context "on windows", :windows_only do
-      # according to Chef::Resource::File, windows state attributes are rights + deny_rights
-      pending "it describes its state"
+    context "on windows" do
+      before do
+        Chef::Resource::File.use_windows_state_attrs!
+
+        WINDOWS_RESOURCE_CLASS = Class.new(Chef::Resource::File) do
+          # force inclusion of windows securable stuff
+          include Chef::Mixin::Securable::WindowsSecurableAttributes
+        end
+
+        @resource = WINDOWS_RESOURCE_CLASS.new("c:/chef/hello.txt")
+        @expanded_rights = {
+          "bob" => {"rights" => ["generic read", "read permissions", "read data / list directory"],
+                    "flags" => ["applies to children", "applies to self"] },
+          "SOMEDOMAIN\Some User" => {"rights" => ["generic read", "read permissions", "read data / list directory"],
+                                     "flags" => ["applies to children", "applies to self"] }
+        }
+
+        @resource.expanded_rights = @expanded_rights
+        @expanded_deny_rights = {
+          "tim" => {"rights" => ["generic read", "read permissions", "read data / list directory"],
+                    "flags" => ["applies to children", "applies to self"] }
+        }
+        @resource.expanded_deny_rights = @expanded_deny_rights
+        @resource.checksum("F" * 64)
+      end
+
+      after do
+        Chef::Resource::File.setup_state_attrs!
+      end
+
+      it "has windows specific state attributes" do
+        WINDOWS_RESOURCE_CLASS.state_attrs.should =~ [:checksum, :expanded_rights, :expanded_deny_rights, :inherits]
+      end
+
+      it "describes its state" do
+        state = @resource.state
+        state[:checksum].should == ("F" * 64)
+        state[:expanded_rights].should == @expanded_rights
+        state[:expanded_deny_rights].should == @expanded_deny_rights
+        state[:inherits].should be_true
+      end
+
     end
 
     it "returns the file path as its identity" do
