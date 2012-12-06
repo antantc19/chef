@@ -370,10 +370,11 @@ describe Chef::FileAccessControl do
 
     context "when using Windows ACLs" do
 
-      it "calculates the target ACL value" do
+      it "calculates the target ACL value with default flags" do
         @resource.rights :read, "Everyone"
         @resource.rights :write, "UBERDOMAIN\Sales"
         @resource.rights :full_control, "Frodo Baggins"
+        @resource.deny_rights :read, "Tim Hinderliter"
 
         @everyone_sid = mock("Everyone SID")
         @fac.should_receive(:get_sid).with("Everyone").and_return(@everyone_sid)
@@ -398,7 +399,14 @@ describe Chef::FileAccessControl do
         # 0x10_000_000 == "generic all"
         Chef::FileAccessControl::Windows::ACE.should_receive(:access_allowed).with(@frodo_baggins_sid, 0x10_000_000, 3).and_return(@frodo_generic_all_ace)
 
-        @all_aces = [@everyone_generic_read_ace, @uberdomain_generic_write_ace, @frodo_generic_all_ace]
+        @tim_h_sid = mock("Tim H SID")
+        @fac.should_receive(:get_sid).with("Tim Hinderliter").and_return(@tim_h_sid)
+
+        @tim_h_deny_ace = mock("ACE--timh deny")
+        Chef::FileAccessControl::Windows::ACE.should_receive(:access_denied).with(@tim_h_sid, 0x80_000_000, 3).and_return(@tim_h_deny_ace)
+
+
+        @all_aces = [@tim_h_deny_ace, @everyone_generic_read_ace, @uberdomain_generic_write_ace, @frodo_generic_all_ace]
 
         @expected_target_acl = mock("Expected Target ACL")
         Chef::ReservedNames::Win32::Security::ACL.should_receive(:create).with(@all_aces).and_return(@expected_target_acl)
