@@ -113,6 +113,7 @@ class Chef
     end
 
     def lookup_checksum(key, fstat)
+      #return nil
       cached = fetch(key)
       if cached && file_unchanged?(cached, fstat)
         validate_checksum(key)
@@ -164,7 +165,16 @@ class Chef
     end
 
     def file_unchanged?(cached, fstat)
-      cached["mtime"].to_f == fstat.mtime.to_f
+      # Workaround race condition:
+      # When the underlying filesystem has 1s mtime resolution (OS X, also
+      # observed on virtualized systems on OS X host), you can modify the file
+      # without changing the mtime, which causes the cache to return an
+      # incorrect checksum. Work around this by forcing recomputation of the
+      # checksum if mtime as a float equals current system time as an integer.
+      # This only fixes anything if the code attempts to read back the checksum
+      # immediately after writing to the file, which we happen to do, so it's
+      # awful and janky but works.
+      (cached["mtime"].to_f != Time.now.to_i) && (cached["mtime"].to_f == fstat.mtime.to_f)
     end
 
     def checksum_file(file, digest)
