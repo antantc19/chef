@@ -165,6 +165,9 @@ shared_examples_for "a file resource" do
   end
 
   context "when the target file does not exist" do
+
+    it_should_behave_like "a securable resource"
+
     before do
       # Assert starting state is expected
       File.should_not exist(path)
