@@ -2,8 +2,6 @@ source "https://rubygems.org"
 
 gemspec
 
-gem "activesupport", :group => :compat_testing, :platform => "ruby"
-
 group(:docgen) do
   gem "ronn"
   gem "yard"
