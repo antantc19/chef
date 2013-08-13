@@ -100,8 +100,18 @@ class Chef
         )
       end
 
+      # override superclass to add symbol for :path argument
+      def path(arg=nil)
+        set_or_return(
+          :path,
+          arg,
+          :kind_of => [ String, Symbol ]
+        )
+      end
+
       def after_created
         validate_source(@source)
+        handle_caching()
       end
 
       private
@@ -122,6 +132,14 @@ class Chef
         false
       end
 
+      def handle_caching
+        if path == :cache
+          uri = ::URI.parse(::URI.unescape(source[0]))
+          cache_file_path = ::File.join(Chef::Config[:file_cache_path], ::File.basename(uri.path))
+          cache_file_path.gsub!(::File::SEPARATOR, ::File::ALT_SEPARATOR) if Chef::Platform.windows?
+          path(cache_file_path)
+        end
+      end
     end
   end
 end
