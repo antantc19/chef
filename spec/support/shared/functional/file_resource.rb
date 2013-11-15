@@ -54,79 +54,101 @@ shared_examples_for "a file with the wrong content" do
     sha256_checksum(path).should == @expected_checksum
   end
 
-  include_context "diff disabled"
+  describe "when diff is disabled" do
 
-  context "when running action :create" do
-    context "with backups enabled" do
+    include_context "diff disabled"
+
+    context "when running action :create" do
+      context "with backups enabled" do
+        before do
+          resource.run_action(:create)
+        end
+
+        it "overwrites the file with the updated content when the :create action is run" do
+          File.stat(path).mtime.should > @expected_mtime
+          sha256_checksum(path).should_not == @expected_checksum
+        end
+
+        it "backs up the existing file" do
+          Dir.glob(backup_glob).size.should equal(1)
+        end
+
+        it "is marked as updated by last action" do
+          resource.should be_updated_by_last_action
+        end
+
+        it "should restore the security contexts on selinux", :selinux_only do
+          selinux_security_context_restored?(path).should be_true
+        end
+      end
+
+      context "with backups disabled" do
+        before do
+          resource.backup(0)
+          resource.run_action(:create)
+        end
+
+        it "should not attempt to backup the existing file if :backup == 0" do
+          Dir.glob(backup_glob).size.should equal(0)
+        end
+
+        it "should restore the security contexts on selinux", :selinux_only do
+          selinux_security_context_restored?(path).should be_true
+        end
+      end
+    end
+
+    describe "when running action :create_if_missing" do
       before do
-        resource.run_action(:create)
+        resource.run_action(:create_if_missing)
       end
 
-      it "overwrites the file with the updated content when the :create action is run" do
-        File.stat(path).mtime.should > @expected_mtime
-        sha256_checksum(path).should_not == @expected_checksum
+      it "doesn't overwrite the file when the :create_if_missing action is run" do
+        File.stat(path).mtime.should == @expected_mtime
+        sha256_checksum(path).should == @expected_checksum
       end
 
-      it "backs up the existing file" do
-        Dir.glob(backup_glob).size.should equal(1)
+      it "is not marked as updated" do
+        resource.should_not be_updated_by_last_action
+      end
+
+      it "should restore the security contexts on selinux", :selinux_only do
+        selinux_security_context_restored?(path).should be_true
+      end
+    end
+
+    describe "when running action :delete" do
+      before do
+        resource.run_action(:delete)
+      end
+
+      it "deletes the file" do
+        File.should_not exist(path)
       end
 
       it "is marked as updated by last action" do
         resource.should be_updated_by_last_action
       end
-
-      it "should restore the security contexts on selinux", :selinux_only do
-        selinux_security_context_restored?(path).should be_true
-      end
     end
 
-    context "with backups disabled" do
+  end
+
+  describe "when diff is enabled" do
+
+    it "resource should not be marked as :sensitive by default" do
+      resource.sensitive.should be_false
+    end
+    
+    context "when resource is marked as :sensitive" do
       before do
-        resource.backup(0)
+        resource.sensitive()
         resource.run_action(:create)
       end
 
-      it "should not attempt to backup the existing file if :backup == 0" do
-        Dir.glob(backup_glob).size.should equal(0)
+      it "diff output shouldn't be present in the logs" do
+        resource.diff.should.include "diff output is suppressed for the sensitive resource"
+        resource.provider.converge_actions.should.include "diff output is suppressed for the sensitive resource"
       end
-
-      it "should restore the security contexts on selinux", :selinux_only do
-        selinux_security_context_restored?(path).should be_true
-      end
-    end
-  end
-
-  describe "when running action :create_if_missing" do
-    before do
-      resource.run_action(:create_if_missing)
-    end
-
-    it "doesn't overwrite the file when the :create_if_missing action is run" do
-      File.stat(path).mtime.should == @expected_mtime
-      sha256_checksum(path).should == @expected_checksum
-    end
-
-    it "is not marked as updated" do
-      resource.should_not be_updated_by_last_action
-    end
-
-    it "should restore the security contexts on selinux", :selinux_only do
-      selinux_security_context_restored?(path).should be_true
-    end
-  end
-
-  describe "when running action :delete" do
-    before do
-      resource.run_action(:delete)
-    end
-
-    it "deletes the file" do
-      File.should_not exist(path)
-    end
-
-    it "is marked as updated by last action" do
-      resource.should be_updated_by_last_action
-    end
   end
 end
 
