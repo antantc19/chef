@@ -39,12 +39,6 @@ begin
     t.pattern = FileList['spec/functional/**/*_spec.rb']
   end
 
-  desc "Run the rspec tests with activesupport loaded"
-  RSpec::Core::RakeTask.new(:spec_activesupport) do |t|
-    t.rspec_opts = ['--options', "\"#{CHEF_ROOT}/.rspec\"", "--require active_support/core_ext"]
-    t.pattern = FileList['spec/unit/**/*_spec.rb']
-  end
-
   namespace :spec do
     desc "Run all specs in spec directory with RCov"
     RSpec::Core::RakeTask.new(:rcov) do |t|
