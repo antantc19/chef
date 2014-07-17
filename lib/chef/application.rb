@@ -32,8 +32,8 @@ class Chef::Application
   include Mixlib::CLI
 
   def initialize
+    puts "YAY"
     super
-
     @chef_client = nil
     @chef_client_json = nil
 
@@ -121,14 +121,33 @@ class Chef::Application
   # that a user has configured a log_location in client.rb, but is running
   # chef-client by hand to troubleshoot a problem.
   def configure_logging
-    Chef::Log.init(MonoLogger.new(Chef::Config[:log_location]))
-    if want_additional_logger?
-      configure_stdout_logger
+    puts "LOGGERS! " + Chef::Config[:loggers].to_json
+
+    if Chef::Config[:loggers].nil? || Chef::Config[:loggers].empty?
+    begin
+      Chef::Log.init(MonoLogger.new(Chef::Config[:log_location]))
+      if want_additional_logger?
+        configure_stdout_logger
+      end
+      Chef::Log.level = resolve_log_level
+    rescue StandardError => error
+      Chef::Log.fatal("Failed to open or create log file at #{Chef::Config[:log_location]}: #{error.class} (#{error.message})")
+      Chef::Application.fatal!("Aborting due to invalid 'log_location' configuration", 2)
     end
-    Chef::Log.level = resolve_log_level
-  rescue StandardError => error
-    Chef::Log.fatal("Failed to open or create log file at #{Chef::Config[:log_location]}: #{error.class} (#{error.message})")
-    Chef::Application.fatal!("Aborting due to invalid 'log_location' configuration", 2)
+    else
+      puts "Create magic loggers!"
+      Chef::Config[:loggers].each do |logger|
+        puts "Logger Name: " + logger[0]
+        puts "Logger type: " + logger[1]
+        puts "Log Level: " + logger[2].to_s
+        puts "Log init args: " + logger[3].to_json
+
+        require "chef/loggers/chef_logger"
+        log_class = Chef::Loggers.const_get("#{logger[1]}".to_sym).new(logger[3])
+        Chef::Log.init(log_class) or
+          raise StandardError, "No logger class found for #{logger[1]}"
+      end
+    end
   end
 
   def configure_stdout_logger

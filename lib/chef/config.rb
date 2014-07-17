@@ -300,6 +300,12 @@ class Chef
     # Logging location as either an IO stream or string representing log file path
     default :log_location, STDOUT
 
+    def self.add_logger(name, log_type, log_level=:info, args=nil)
+      loggers.push([name, log_type, log_level, args])
+    end
+
+    default :loggers, []
+
     # Using `force_formatter` causes chef to default to formatter output when STDOUT is not a tty
     default :force_formatter, false
 
