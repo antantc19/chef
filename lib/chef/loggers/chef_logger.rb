@@ -7,7 +7,6 @@ require 'pp'
 # ripped out.
 
 class Chef
-
   module Loggers
     class ChefLogger < Logger
 
@@ -33,20 +32,18 @@ class Chef
       # Create an instance.
       #
       def initialize(args)
-        unless args[:log_location].nil?
         @progname = nil
         @level = DEBUG
         @default_formatter = Formatter.new
         @formatter = nil
-        @logdev = nil
+        @logdev = STDOUT
         unless args[:log_location].nil?
           @logdev = LocklessLogDevice.new(args[:log_location])
         end
       end
     end
 
-    class LocklessLogDevice < LogDevice
-
+    class LocklessLogDevice < Logger::LogDevice
       def initialize(log = nil)
         @dev = @filename = @shift_age = @shift_size = nil
         if log.respond_to?(:write) and log.respond_to?(:close)
@@ -59,7 +56,6 @@ class Chef
       end
 
       def write(message)
-        puts "In write"
         @dev.write(message)
       rescue Exception => ignored
         warn("log writing failed. #{ignored}")

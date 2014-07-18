@@ -300,8 +300,8 @@ class Chef
     # Logging location as either an IO stream or string representing log file path
     default :log_location, STDOUT
 
-    def self.add_logger(name, log_type, log_level=:info, args=nil)
-      loggers.push([name, log_type, log_level, args])
+    def self.add_logger(log_type, args=nil)
+      loggers.push([log_type, args])
     end
 
     default :loggers, []
