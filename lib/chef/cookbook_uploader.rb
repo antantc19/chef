@@ -94,6 +94,9 @@ class Chef
       cookbooks.each do |cb|
         save_url = opts[:force] ? cb.force_save_url : cb.save_url
         begin
+          require 'pp'
+          pp cb
+          puts Chef::JSONCompat.to_json_pretty(cb)
           rest.put(save_url, cb)
         rescue Net::HTTPServerException => e
           case e.response.code

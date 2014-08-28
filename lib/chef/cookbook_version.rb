@@ -40,9 +40,10 @@ class Chef
   class CookbookVersion
     include Comparable
 
-    COOKBOOK_SEGMENTS = [ :resources, :providers, :recipes, :definitions, :libraries, :attributes, :files, :templates, :root_files ]
+    COOKBOOK_SEGMENTS = [ :test, :resources, :providers, :recipes, :definitions, :libraries, :attributes, :files, :templates, :root_files ]
 
     attr_accessor :root_paths
+    attr_accessor :test_filenames  # FIXME: TURN INTO A HASH BY SEGMENT
     attr_accessor :definition_filenames
     attr_accessor :template_filenames
     attr_accessor :file_filenames
@@ -98,6 +99,7 @@ class Chef
       @frozen = false
       @attribute_filenames = Array.new
       @definition_filenames = Array.new
+      @test_filenames = Array.new  # FIXME: loop over segments
       @template_filenames = Array.new
       @file_filenames = Array.new
       @recipe_filenames = Array.new
@@ -268,6 +270,8 @@ class Chef
         @file_filenames
       when :templates
         @template_filenames
+      when :test  # FIXME: LOOP OVER SEGMENTS
+        @test_filenames
       when :root_files
         @root_filenames
       end
@@ -611,6 +615,8 @@ class Chef
     # See #preferred_manifest_record for a description an individual manifest record.
     def generate_manifest
       manifest = Mash.new({
+        # FIXME: loop over COOKBOOK_SEGMENTS
+        :test => Array.new,
         :recipes => Array.new,
         :definitions => Array.new,
         :libraries => Array.new,

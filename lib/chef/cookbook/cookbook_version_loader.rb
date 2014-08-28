@@ -11,6 +11,7 @@ class Chef
                                       :definition_filenames,
                                       :recipe_filenames,
                                       :template_filenames,
+                                      :test_filenames,  # FIXME: LOOP OVER SEGMENTS
                                       :file_filenames,
                                       :library_filenames,
                                       :resource_filenames,
@@ -44,6 +45,7 @@ class Chef
         @cookbook_settings = {
           :attribute_filenames  => {},
           :definition_filenames => {},
+          :test_filenames => {},  # FIXME: LOOP OVER SEGMENTS
           :recipe_filenames     => {},
           :template_filenames   => {},
           :file_filenames       => {},
@@ -81,6 +83,7 @@ class Chef
         load_as(:definition_filenames, 'definitions', '*.rb')
         load_as(:recipe_filenames, 'recipes', '*.rb')
         load_as(:library_filenames, 'libraries', '*.rb')
+        load_recursively_as(:test_filenames, "test", "*")    # FIXME: LOOP OVER SEGMENTS
         load_recursively_as(:template_filenames, "templates", "*")
         load_recursively_as(:file_filenames, "files", "*")
         load_recursively_as(:resource_filenames, "resources", "*.rb")
@@ -122,6 +125,7 @@ class Chef
         Chef::CookbookVersion.new(cookbook_name, *cookbook_paths).tap do |c|
           c.attribute_filenames  = cookbook_settings[:attribute_filenames].values
           c.definition_filenames = cookbook_settings[:definition_filenames].values
+          c.test_filenames = cookbook_settings[:test_filenames].values   # FIXME: LOOP OVER SEGMENTS
           c.recipe_filenames     = cookbook_settings[:recipe_filenames].values
           c.template_filenames   = cookbook_settings[:template_filenames].values
           c.file_filenames       = cookbook_settings[:file_filenames].values
