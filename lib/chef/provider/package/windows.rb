@@ -33,6 +33,8 @@ class Chef
         # binary to determine the installer type for the user. Since the file
         # must be on disk to do so, we have to make this choice in the provider.
         require 'chef/provider/package/windows/msi.rb'
+        require 'chef/provider/package/windows/cab.rb'
+        require 'chef/provider/package/windows/msu.rb'
 
         # load_current_resource is run in Chef::Provider#run_action when not in whyrun_mode?
         def load_current_resource
@@ -49,6 +51,10 @@ class Chef
             case installer_type
             when :msi
               Chef::Provider::Package::Windows::MSI.new(@new_resource)
+            when :cab
+              Chef::Provider::Package::Windows::CAB.new(@new_resource)
+            when :msu
+              Chef::Provider::Package::Windows::MSU.new(@new_resource)
             else
               raise "Unable to find a Chef::Provider::Package::Windows provider for installer_type '#{installer_type}'"
             end
@@ -62,8 +68,13 @@ class Chef
             else
               file_extension = ::File.basename(@new_resource.source).split(".").last.downcase
 
-              if file_extension == "msi"
+              case file_extension
+              when "msi"
                 :msi
+              when "cab"
+                :cab
+              when "msu"
+                :msu
               else
                 raise ArgumentError, "Installer type for Windows Package '#{@new_resource.name}' not specified and cannot be determined from file extension '#{file_extension}'"
               end
