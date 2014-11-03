@@ -2,6 +2,7 @@ source "https://rubygems.org"
 gemspec :name => "chef"
 
 gem "activesupport", "< 4.0.0", :group => :compat_testing, :platform => "ruby"
+gem "ipaddress", :git => "https://github.com/bluemonk/ipaddress.git", :branch => "master"
 
 group(:docgen) do
   gem "yard"
