@@ -2,7 +2,11 @@ source "https://rubygems.org"
 gemspec :name => "chef"
 
 gem "activesupport", "< 4.0.0", :group => :compat_testing, :platform => "ruby"
-gem "ipaddress", :git => "https://github.com/bluemonk/ipaddress.git", :branch => "master"
+
+gem "ipaddress", :git => "https://github.com/bluemonk/ipaddress.git",
+                 :ref => "27a4d39661507bd068f50cc9cb3f652772ff56a3"
+
+gem "ohai", :git => "https://github.com/opscode/ohai.git", :branch => "shain/ipaddress"
 
 group(:docgen) do
   gem "yard"
