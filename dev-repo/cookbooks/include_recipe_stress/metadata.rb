@@ -1,0 +1,7 @@
+name             'include_recipe_stress'
+maintainer       ''
+maintainer_email ''
+license          ''
+description      'Stresses include_recipe bit'
+long_description 'Stresses include_recipe bit'
+version          '0.1.0'

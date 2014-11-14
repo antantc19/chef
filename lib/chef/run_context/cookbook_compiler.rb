@@ -22,6 +22,7 @@ require 'chef/recipe'
 require 'chef/resource/lwrp_base'
 require 'chef/provider/lwrp_base'
 require 'chef/resource_definition_list'
+require 'benchmark'
 
 class Chef
   class RunContext
@@ -72,7 +73,8 @@ class Chef
         compile_attributes
         compile_lwrps
         compile_resource_definitions
-        compile_recipes
+
+        puts Benchmark.measure("Compile Recipe Timing:") { compile_recipes }
       end
 
       # Extracts the cookbook names from the expanded run list, then iterates

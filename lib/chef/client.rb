@@ -309,6 +309,7 @@ class Chef
     # === Returns
     # true:: Always returns true
     def converge(run_context)
+      raise "Please don't converge"
       @events.converge_start(run_context)
       Chef::Log.debug("Converging node #{node_name}")
       @runner = Chef::Runner.new(run_context)
