@@ -474,8 +474,17 @@ class Chef
            merge_overrides(path),
            apply_path(@automatic, path)
          ]
+
+         components.map! do |c|
+           begin
+             c.dup
+           rescue TypeError
+             c
+           end
+         end
+
          components.inject(nil) do |merged, component|
-           Chef::Mixin::DeepMerge.hash_only_merge(merged, component)
+           Chef::Mixin::DeepMerge.hash_only_merge!(merged, component)
          end
        end
 
