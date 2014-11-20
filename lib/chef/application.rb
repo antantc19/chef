@@ -27,6 +27,7 @@ require 'chef/platform'
 require 'mixlib/cli'
 require 'tmpdir'
 require 'rbconfig'
+require 'benchmark'
 
 class Chef
   class Application
@@ -258,7 +259,7 @@ class Chef
         $0 = "#{client_solo} worker: ppid=#{Process.ppid};start=#{Time.new.strftime("%R:%S")};"
         begin
           Chef::Log.debug "Forked instance now converging"
-          @chef_client.run
+          puts Benchmark.measure { @chef_client.run }
         rescue Exception => e
           Chef::Log.error(e.to_s)
           exit 1
