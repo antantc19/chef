@@ -103,6 +103,13 @@ class Chef
         :boolean => true,
         :default => true
 
+      option :rows,
+        :short => "-R INT",
+        :long => "--rows INT",
+        :description => "The maximum number of rows to return in node search",
+        :default => 1000,
+        :proc => lambda { |i| i.to_i }
+
       def session
         config[:on_error] ||= :skip
         ssh_error_handler = Proc.new do |server|
@@ -155,7 +162,9 @@ class Chef
       def search_nodes
         list = Array.new
         query = Chef::Search::Query.new
-        @action_nodes = query.search(:node, @name_args[0])[0]
+        search_args = Hash.new
+        search_args[:rows] = config[:rows]
+        @action_nodes = query.search(:node, @name_args[0], search_args)[0]
         @action_nodes.each do |item|
           # we should skip the loop to next iteration if the item
           # returned by the search is nil
