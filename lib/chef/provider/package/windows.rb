@@ -36,7 +36,7 @@ class Chef
 
         # load_current_resource is run in Chef::Provider#run_action when not in whyrun_mode?
         def load_current_resource
-          @new_resource.source(Chef::Util::PathHelper.validate_path(@new_resource.source))
+          @new_resource.source(cached_file(@new_resource.source))
 
           @current_resource = Chef::Resource::WindowsPackage.new(@new_resource.name)
           @current_resource.version(package_provider.installed_version)
@@ -80,6 +80,28 @@ class Chef
         def remove_package(name, version)
           package_provider.remove_package(name, version)
         end
+
+        def cached_file(source, checksum=nil)
+          @installer_file_path ||= begin
+
+            file_path = if source =~ ::URI::ABS_URI && %w[ftp http https].include?(URI.parse(source).scheme)
+              uri = ::URI.parse(source)
+              cache_file_path = "#{Chef::Config[:file_cache_path]}/#{::File.basename(::URI.unescape(uri.path))}"
+              Chef::Log.debug("Caching a copy of file #{source} at #{cache_file_path}")
+              r = Chef::Resource::RemoteFile.new(cache_file_path, run_context)
+              r.source(source)
+              r.backup(false)
+              r.checksum(checksum) if checksum
+              r.run_action(:create)
+              cache_file_path
+            else
+              source
+            end
+
+            Chef::Util::PathHelper.validate_path(file_path)
+          end
+        end
+
       end
     end
   end
