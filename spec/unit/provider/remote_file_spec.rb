@@ -32,7 +32,7 @@ describe Chef::Provider::RemoteFile do
   end
 
   let(:content) do
-    content = double('Chef::Provider::File::Content::RemoteFile')
+    double('Chef::Provider::File::Content::RemoteFile')
   end
 
   let(:node) { double('Chef::Node') }
@@ -48,7 +48,6 @@ describe Chef::Provider::RemoteFile do
   subject(:provider) do
     provider = described_class.new(resource, run_context)
     allow(provider).to receive(:content).and_return(content)
-    allow(provider).to receive(:update_new_resource_checksum).and_return(nil) # Otherwise it doesn't behave like a File provider
     provider
   end
 

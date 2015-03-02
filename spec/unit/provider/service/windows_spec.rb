@@ -20,6 +20,44 @@
 require 'spec_helper'
 require 'mixlib/shellout'
 
+# A class that implements the same API as Win32::Service. All methods raise
+# errors unless stubbed or redefined.
+#
+# This class is used because we cannot load win32-specific libraries on
+# non-windows platforms, so we replace the constant with a subclass of this for
+# unit tests. We need to provide the same API in order to enable the
+# `verify_partial_doubles` RSpec option.
+class Win32ServiceDouble
+  AUTO_START = 0x00000002
+  DEMAND_START = 0x00000003
+  DISABLED = 0x00000004
+
+  def self.status(arg)
+    raise "NOT IMPLEMENTED: the status method must be stubbed"
+  end
+
+  def self.config_info(arg)
+    raise "NOT IMPLEMENTED: the config_info method must be stubbed"
+  end
+
+  def self.exists?(arg)
+    raise "NOT IMPLEMENTED: the exists? method must be stubbed"
+  end
+
+  def self.configure(arg)
+    raise "NOT IMPLEMENTED: the exists? method must be stubbed"
+  end
+
+  def self.start(arg)
+    raise "NOT IMPLEMENTED: the start method must be stubbed"
+  end
+
+  def self.stop(arg)
+    raise "NOT IMPLEMENTED: the stop method must be stubbed"
+  end
+
+end
+
 describe Chef::Provider::Service::Windows, "load_current_resource" do
   before(:each) do
     @node = Chef::Node.new
@@ -30,10 +68,7 @@ describe Chef::Provider::Service::Windows, "load_current_resource" do
     @provider.current_resource = Chef::Resource::WindowsService.new("current-chef")
     Object.send(:remove_const, 'Win32') if defined?(Win32)
     Win32 = Module.new
-    Win32::Service = Class.new
-    Win32::Service::AUTO_START = 0x00000002
-    Win32::Service::DEMAND_START = 0x00000003
-    Win32::Service::DISABLED = 0x00000004
+    Win32::Service = Class.new(Win32ServiceDouble)
     allow(Win32::Service).to receive(:status).with(@new_resource.service_name).and_return(
       double("StatusStruct", :current_state => "running"))
     allow(Win32::Service).to receive(:config_info).with(@new_resource.service_name).and_return(

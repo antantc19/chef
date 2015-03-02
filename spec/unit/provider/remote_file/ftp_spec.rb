@@ -53,7 +53,8 @@ describe Chef::Provider::RemoteFile::FTP do
 
   let(:tempfile) do
     t = StringIO.new
-    allow(t).to receive(:path).and_return(tempfile_path)
+    example = self
+    t.define_singleton_method(:path) { example.tempfile_path }
     t
   end
 
@@ -137,7 +138,6 @@ describe Chef::Provider::RemoteFile::FTP do
       let(:uri) { URI.parse("ftp://opscode.com:8021/seattle.txt") }
 
       it "should connect on an alternate port when one is provided" do
-        uri = URI.parse("ftp://opscode.com:8021/seattle.txt")
         expect(ftp).to receive(:connect).with("opscode.com", 8021)
         fetcher.fetch
       end

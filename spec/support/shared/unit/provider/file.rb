@@ -49,7 +49,7 @@ def setup_normal_file
     allow(File).to receive(:directory?).with(path).and_return(false)
     allow(File).to receive(:writable?).with(path).and_return(true)
     allow(file_symlink_class).to receive(:symlink?).with(path).and_return(false)
-    allow(File).to receive(:realpath?).with(path).and_return(normalized_path)
+    allow(File).to receive(:realpath).with(path).and_return(normalized_path)
   end
   allow(File).to receive(:directory?).with(enclosing_directory).and_return(true)
 end
@@ -57,7 +57,7 @@ end
 def setup_missing_file
   [ resource_path, normalized_path, windows_path].each do |path|
     allow(File).to receive(:file?).with(path).and_return(false)
-    allow(File).to receive(:realpath?).with(path).and_return(resource_path)
+    allow(File).to receive(:realpath).with(path).and_return(resource_path)
     allow(File).to receive(:exists?).with(path).and_return(false)
     allow(File).to receive(:exist?).with(path).and_return(false)
     allow(File).to receive(:directory?).with(path).and_return(false)
@@ -70,7 +70,7 @@ end
 def setup_symlink
   [ resource_path, normalized_path, windows_path].each do |path|
     allow(File).to receive(:file?).with(path).and_return(true)
-    allow(File).to receive(:realpath?).with(path).and_return(normalized_path)
+    allow(File).to receive(:realpath).with(path).and_return(normalized_path)
     allow(File).to receive(:exists?).with(path).and_return(true)
     allow(File).to receive(:exist?).with(path).and_return(true)
     allow(File).to receive(:directory?).with(path).and_return(false)
@@ -83,7 +83,7 @@ end
 def setup_unwritable_file
   [ resource_path, normalized_path, windows_path].each do |path|
     allow(File).to receive(:file?).with(path).and_return(false)
-    allow(File).to receive(:realpath?).with(path).and_raise(Errno::ENOENT)
+    allow(File).to receive(:realpath).with(path).and_raise(Errno::ENOENT)
     allow(File).to receive(:exists?).with(path).and_return(true)
     allow(File).to receive(:exist?).with(path).and_return(true)
     allow(File).to receive(:directory?).with(path).and_return(false)
@@ -96,7 +96,7 @@ end
 def setup_missing_enclosing_directory
   [ resource_path, normalized_path, windows_path].each do |path|
     allow(File).to receive(:file?).with(path).and_return(false)
-    allow(File).to receive(:realpath?).with(path).and_raise(Errno::ENOENT)
+    allow(File).to receive(:realpath).with(path).and_raise(Errno::ENOENT)
     allow(File).to receive(:exists?).with(path).and_return(false)
     allow(File).to receive(:exist?).with(path).and_return(false)
     allow(File).to receive(:directory?).with(path).and_return(false)

@@ -140,6 +140,10 @@ class Chef
         end
       end
 
+      def create_user
+        raise NotImplementedError
+      end
+
       def action_remove
         if @user_exists
           converge_by("remove user #{@new_resource.username}") do

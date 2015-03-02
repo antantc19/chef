@@ -183,6 +183,66 @@ RSpec.configure do |config|
   end
 end
 
+require 'chef/shell/shell_session'
+# Stubbed shell session subclass
+class TestableShellSession < Shell::ShellSession
+
+  def rebuild_node
+    nil
+  end
+
+  def rebuild_collection
+    nil
+  end
+
+  def loading
+    nil
+  end
+
+  def loading_complete
+    nil
+  end
+
+end
+
+# Double of irb's job manager used for unit tests
+class TestJobManager
+  attr_accessor :jobs
+
+  def select_shell_session(session_name)
+    nil
+  end
+
+  def switch(session_name)
+  end
+end
+
+# Extends an individual object with ShellExtensions for unit tests
+ObjectTestHarness = Proc.new do
+  extend Shell::Extensions::ObjectCoreExtensions
+
+  def conf=(new_conf)
+    @conf = new_conf
+  end
+
+  def conf
+    @conf
+  end
+
+  def jobs
+    nil
+  end
+
+  def irb(session_name)
+    nil
+  end
+
+  desc "rspecin'"
+  def rspec_method
+  end
+end
+
+
 require 'webrick/utils'
 
 #    Webrick uses a centralized/synchronized timeout manager. It works by

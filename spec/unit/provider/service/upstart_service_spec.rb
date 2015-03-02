@@ -212,7 +212,7 @@ describe Chef::Provider::Service::Upstart do
     end
 
     it "should enable the service if it is not enabled" do
-      @file = Object.new
+      @file = instance_double("Chef::Util::FileEdit")
       allow(Chef::Util::FileEdit).to receive(:new).and_return(@file)
       allow(@current_resource).to receive(:enabled).and_return(false)
       expect(@file).to receive(:search_file_replace)
@@ -221,7 +221,7 @@ describe Chef::Provider::Service::Upstart do
     end
 
     it "should disable the service if it is enabled" do
-      @file = Object.new
+      @file = instance_double("Chef::Util::FileEdit")
       allow(Chef::Util::FileEdit).to receive(:new).and_return(@file)
       allow(@current_resource).to receive(:enabled).and_return(true)
       expect(@file).to receive(:search_file_replace)

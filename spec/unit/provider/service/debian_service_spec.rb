@@ -46,8 +46,6 @@ describe Chef::Provider::Service::Debian do
 
     context "when update-rc.d shows init linked to rc*.d/" do
       before do
-        allow(@provider).to receive(:assert_update_rcd_available)
-
         result = <<-UPDATE_RC_D_SUCCESS
   Removing any system startup links for /etc/init.d/chef ...
     /etc/rc0.d/K20chef
@@ -79,7 +77,6 @@ describe Chef::Provider::Service::Debian do
 
     context "when update-rc.d shows init isn't linked to rc*.d/" do
       before do
-        allow(@provider).to receive(:assert_update_rcd_available)
         @status = double("Status", :exitstatus => 0)
         @stdout = StringIO.new(
           " Removing any system startup links for /etc/init.d/chef ...")
@@ -196,8 +193,6 @@ insserv: dryrun, not creating .depend.boot, .depend.start, and .depend.stop
       context "on #{model}" do
         context "when update-rc.d shows init linked to rc*.d/" do
           before do
-            allow(@provider).to receive(:assert_update_rcd_available)
-
             @stdout = StringIO.new(expected_results["linked"]["stdout"])
             @stderr = StringIO.new(expected_results["linked"]["stderr"])
             @status = double("Status", :exitstatus => 0, :stdout => @stdout)
@@ -223,7 +218,6 @@ insserv: dryrun, not creating .depend.boot, .depend.start, and .depend.stop
 
         context "when update-rc.d shows init isn't linked to rc*.d/" do
           before do
-            allow(@provider).to receive(:assert_update_rcd_available)
             @stdout = StringIO.new(expected_results["not linked"]["stdout"])
             @stderr = StringIO.new(expected_results["not linked"]["stderr"])
             @status = double("Status", :exitstatus => 0, :stdout => @stdout)

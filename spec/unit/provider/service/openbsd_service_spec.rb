@@ -134,8 +134,6 @@ describe Chef::Provider::Service::Openbsd do
       stub_etc_rcd_script
       provider.current_resource = current_resource
       current_resource.service_name(new_resource.service_name)
-
-      allow(provider).to receive(:service_enable_variable_name).and_return("#{new_resource.service_name}_enable")
     end
 
     context "when the service is builtin" do
@@ -248,7 +246,6 @@ describe Chef::Provider::Service::Openbsd do
       stub_etc_rcd_script
       expect(provider).to receive(:determine_current_status!)
       current_resource.running(false)
-      allow(provider).to receive(:service_enable_variable_name).and_return "#{new_resource.service_name}_enable"
       expect(::File).to receive(:open).with("/etc/rc.d/#{new_resource.service_name}")
      end
 
