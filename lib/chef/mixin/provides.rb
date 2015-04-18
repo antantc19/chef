@@ -23,7 +23,8 @@ class Chef
         node_map.set(short_name, true, opts, &block)
       end
 
-      # provides a node on the resource (early binding)
+      # Check whether this resource provides the resource_name DSL for the given
+      # node
       def provides?(node, resource_name)
         node_map.get(node, resource_name)
       end
