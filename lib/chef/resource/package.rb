@@ -23,6 +23,8 @@ class Chef
   class Resource
     class Package < Chef::Resource
 
+      provides :package
+
       identity_attr :package_name
 
       state_attrs :version, :options

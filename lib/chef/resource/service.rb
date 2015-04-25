@@ -23,6 +23,8 @@ class Chef
   class Resource
     class Service < Chef::Resource
 
+      provides :service
+
       identity_attr :service_name
 
       state_attrs :enabled, :running
