@@ -1,5 +1,7 @@
 ## Unreleased
 
+* [pr#3269](https://github.com/chef/chef/pull/3269): Deprecate automatic recipe
+  DSL for classes in `Chef::Resource`
 * [pr#3160](https://github.com/chef/chef/pull/3160): Use Chef Zero in
   socketless mode for local mode, add `--no-listen` flag to disable port
   binding
@@ -43,14 +45,14 @@
 
 ## 12.1.2
 * [Issue 3022](https://github.com/chef/chef/issues/3022): Homebrew Cask install fails
-  FIXME (remove on 12.2.0 release): 3022 was only merged to 12-stable and #3077 or its descendant should fix this 
+  FIXME (remove on 12.2.0 release): 3022 was only merged to 12-stable and #3077 or its descendant should fix this
 * [Issue 3059](https://github.com/chef/chef/issues/3059): Chef 12.1.1 yum_package silently fails
 * [Issue 3078](https://github.com/chef/chef/issues/3078): Compat break in audit-mode changes
 
 ## 12.1.1
 * [**Phil Dibowitz**](https://github.com/jaymzh):
   [Issue 3008](https://github.com/chef/chef/issues/3008) Allow people to pass in `source` to package
-* [Issue 3011](https://github.com/chef/chef/issues/3011) `package` provider base should include 
+* [Issue 3011](https://github.com/chef/chef/issues/3011) `package` provider base should include
   `Chef::Mixin::Command` as there are still providers that use it.
 * [**Ranjib Dey**](https://github.com/ranjib):
   [Issue 3019](https://github.com/chef/chef/issues/3019) Fix data fetching when explicit attributes are passed
