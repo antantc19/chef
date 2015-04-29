@@ -675,7 +675,7 @@ class Chef
     #
     def provider(arg=nil)
       klass = if arg.kind_of?(String) || arg.kind_of?(Symbol)
-        lookup_provider_constant(arg)
+        Chef.run_context.provider_classes.public_send(arg)
       else
         arg
       end
@@ -808,17 +808,6 @@ class Chef
     end
 
     #
-    # The DSL name of this resource (e.g. `package` or `yum_package`)
-    #
-    # @return [String] The DSL name of this resource.
-    def self.dsl_name
-      if name
-        name = self.name.split('::')[-1]
-        convert_to_snake_case(name)
-      end
-    end
-
-    #
     # The name of this resource (e.g. `file`)
     #
     # @return [String] The name of this resource.
@@ -944,15 +933,6 @@ class Chef
       run_context.notifies_delayed(Notification.new(resource_spec, action, self))
     end
 
-    class << self
-      # back-compat
-      # NOTE: that we do not support unregistering classes as descendents like
-      # we used to for LWRP unloading because that was horrible and removed in
-      # Chef-12.
-      alias :resource_classes :descendants
-      alias :find_subclass_by_name :find_descendants_by_name
-    end
-
     # If an unknown method is invoked, determine whether the enclosing Provider's
     # lexical scope can fulfill the request. E.g. This happens when the Resource's
     # block invokes new_resource.
@@ -961,22 +941,6 @@ class Chef
         enclosing_provider.send(method_symbol, *args, &block)
       else
         raise NoMethodError, "undefined method `#{method_symbol.to_s}' for #{self.class.to_s}"
-      end
-    end
-
-    def self.provides(name, *args, &block)
-      super
-      Chef::DSL::Resources.add_resource_dsl(name)
-    end
-
-    def self.provides_nothing
-      unprovided_names = super
-
-      unprovided_names.each do |name|
-        resource = resource_matching_short_name(name)
-        if !resource || resource == self
-          Chef::DSL::Resources.remove_resource_dsl(name)
-        end
       end
     end
 
@@ -1036,10 +1000,7 @@ class Chef
     end
 
     def provider_for_action(action)
-      require 'chef/provider_resolver'
-      provider = Chef::ProviderResolver.new(node, self, action).resolve.new(self, run_context)
-      provider.action = action
-      provider
+      Chef.run_context.provider_classes.public_send(resource.resource_name)
     end
 
     # ??? TODO Seems unused.  Delete?
@@ -1129,20 +1090,38 @@ class Chef
       Chef::ResourceResolver.new(Chef::Node.new, short_name).resolve
     end
 
-    private
-
-    def lookup_provider_constant(name)
-      begin
-        self.class.provider_base.const_get(convert_to_class_name(name.to_s))
-      rescue NameError => e
-        if e.to_s =~ /#{Regexp.escape(self.class.provider_base.to_s)}/
-          raise ArgumentError, "No provider found to match '#{name}'"
-        else
-          raise e
+    module Deprecated
+      #
+      # The DSL name of this resource (e.g. `package` or `yum_package`)
+      #
+      # @return [String] The DSL name of this resource.
+      def self.dsl_name
+        if name
+          name = self.name.split('::')[-1]
+          convert_to_snake_case(name)
         end
       end
     end
+    include Deprecated
+
+    module DeprecatedClassMethods
+      include DescendantTracker
+      # back-compat
+      # NOTE: that we do not support unregistering classes as descendents like
+      # we used to for LWRP unloading because that was horrible and removed in
+      # Chef-12.
+      alias :resource_classes :descendants
+      alias :find_subclass_by_name :find_descendants_by_name
+    end
+    extend DeprecatedClassMethods
+
+    protected
+
+    #
+    # The module Chef::Mixin::Provides will use to register resources.
+    #
+    def self.provides_dsl_module
+      Chef::DSL::Resources::DeclaredResources
+    end
   end
 end
-
-require 'chef/resource_resolver'

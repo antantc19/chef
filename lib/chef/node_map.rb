@@ -47,14 +47,16 @@ class Chef
     # @yield [node] Arbitrary node filter as a block which takes a node argument
     # @return [NodeMap] Returns self for possible chaining
     #
-    def set(key, value, filters = {}, &block)
-      validate_filter!(filters)
-      deprecate_filter!(filters)
-      @map[key] ||= []
+    def set(key, node_filter,
+            priority: Float::INFINITY,
+            &block)
+      Chef::Log.warn "The #{key} option to node_map has been deprecated" if DEPRECATED_OPTS.include?(key)
+
+      map[key] ||= SortedSet.new()
       # we match on the first value we find, so we want to unshift so that the
       # last setter wins
       # FIXME: need a test for this behavior
-      @map[key].unshift({ filters: filters, block: block, value: value })
+      map[key].unshift({ filters: filters, block: block, value: value })
       self
     end
 
@@ -70,12 +72,20 @@ class Chef
       raise "first argument must be a Chef::Node" unless node.is_a?(Chef::Node)
       return nil unless @map.has_key?(key)
       @map[key].each do |matcher|
-        if filters_match?(node, matcher[:filters]) &&
-          block_matches?(node, matcher[:block])
-          return matcher[:value]
+        if filters_match?(node, matcher[:filters])
+          result = block.nil? || block.call(node)
+          if result
+            return result == true ? matcher[:value] : result
+          end
         end
       end
       nil
+    end
+
+    def delete_value(value)
+      @map.each do |key, matcher|
+        matchers.delete_if { |matcher| matcher[:value] == value }
+      end
     end
 
     def clear
@@ -85,21 +95,6 @@ class Chef
     end
 
     private
-
-    # only allow valid filter options
-    def validate_filter!(filters)
-      filters.each_key do |key|
-        # FIXME: real exception
-        raise "Bad key #{key} in Chef::NodeMap filter expression" unless VALID_OPTS.include?(key)
-      end
-    end
-
-    # warn on deprecated filter options
-    def deprecate_filter!(filters)
-      filters.each_key do |key|
-        Chef::Log.warn "The #{key} option to node_map has been deprecated" if DEPRECATED_OPTS.include?(key)
-      end
-    end
 
     # @todo: this works fine, but is probably hard to understand
     def negative_match(filter, param)
@@ -144,9 +139,41 @@ class Chef
       return true
     end
 
-    def block_matches?(node, block)
-      return true if block.nil?
-      block.call node
+    module Deprecated
+      def set(name, value = nil,
+              on_platform: nil,
+              on_platforms: nil,
+              platform: nil,
+              os: nil,
+              platform_family: nil,
+              priority: Float::INFINITY,
+              &block)
+        if on_platform
+          Chef::Log.deprecation "The on_platform option to node_map has been deprecated"
+        end
+        if on_platforms
+          Chef::Log.deprecation "The on_platforms option to node_map has been deprecated"
+        end
+
+        # platform: 'ubuntu' > platform_family: 'debian' > os: 'linux'
+        priority ||= 2 if platform
+        priority ||= 3 if platform_family
+        priority ||= 4 if os
+        priority ||= 5
+
+        if os || platform_family || platform
+          block = proc do |node|
+            return false if os && negative_match?(os, node[:os])
+            return false if platform_family && negative_match?(platform_family, node[:platform_family])
+            return false if platform && negative_match?(platform, node[:platform])
+            result = block.call
+            return value || result
+          end
+        end
+
+        super(name, value, priority: priority, &block)
+      end
     end
+    prepend Deprecated
   end
 end

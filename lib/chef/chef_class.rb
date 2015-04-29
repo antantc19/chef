@@ -33,50 +33,16 @@ class Chef
     # Public API
     #
 
-    # Get the node object
-    #
-    # @return [Chef::Node] node object of the chef-client run
-    attr_reader :node
-
     # Get the run context
     #
     # @return [Chef::RunContext] run_context of the chef-client run
     attr_reader :run_context
 
-    # Get the array of providers associated with a resource_name for the current node
+    # Get the node object
     #
-    # @param resource_name [Symbol] name of the resource as a symbol
-    # @return [Array<Class>] Priority Array of Provider Classes to use for the resource_name on the node
-    def get_provider_priority_array(resource_name)
-      @provider_priority_map.get_priority_array(node, resource_name).dup
-    end
-
-    # Get the array of resources associated with a resource_name for the current node
-    #
-    # @param resource_name [Symbol] name of the resource as a symbol
-    # @return [Array<Class>] Priority Array of Resource Classes to use for the resource_name on the node
-    def get_resource_priority_array(resource_name)
-      @resource_priority_map.get_priority_array(node, resource_name).dup
-    end
-
-    # Set the array of providers associated with a resource_name for the current node
-    #
-    # @param resource_name [Symbol] name of the resource as a symbol
-    # @param priority_array [Array<Class>] Array of Classes to set as the priority for resource_name on the node
-    # @param filter [Hash] Chef::Nodearray-style filter
-    # @return [Array<Class>] Modified Priority Array of Provider Classes to use for the resource_name on the node
-    def set_provider_priority_array(resource_name, priority_array, *filter)
-      @provider_priority_map.set_priority_array(resource_name, priority_array, *filter).dup
-    end
-
-    # Get the array of resources associated with a resource_name for the current node
-    #
-    # @param resource_name [Symbol] name of the resource as a symbol
-    # @param priority_array [Array<Class>] Array of Classes to set as the priority for resource_name on the node
-    # @param filter [Hash] Chef::Nodearray-style filter
-    # @return [Array<Class>] Modified Priority Array of Resource Classes to use for the resource_name on the node
-    def set_resource_priority_array(resource_name, priority_array, *filter)
-      @resource_priority_map.set_priority_array(resource_name, priority_array, *filter).dup
+    # @return [Chef::Node] node object of the chef-client run
+    def node
+      run_context.node
     end
 
     #
@@ -84,30 +50,6 @@ class Chef
     # [ in the ruby sense these have to be public methods, but they are
     #   *NOT* for public consumption ]
     #
-
-    # Sets the resource_priority_map
-    #
-    # @api private
-    # @param resource_priority_map [Chef::Platform::ResourcePriorityMap]
-    def set_resource_priority_map(resource_priority_map)
-      @resource_priority_map = resource_priority_map
-    end
-
-    # Sets the provider_priority_map
-    #
-    # @api private
-    # @param provider_priority_map [Chef::Platform::providerPriorityMap]
-    def set_provider_priority_map(provider_priority_map)
-      @provider_priority_map = provider_priority_map
-    end
-
-    # Sets the node object
-    #
-    # @api private
-    # @param node [Chef::Node]
-    def set_node(node)
-      @node = node
-    end
 
     # Sets the run_context object
     #
@@ -122,9 +64,46 @@ class Chef
     # @api private
     def reset!
       @run_context = nil
-      @node = nil
-      @provider_priority_map = nil
-      @resource_priority_map = nil
     end
+
+    module BackcompatBreak
+      # Get the array of providers associated with a resource_name for the current node
+      #
+      # @param resource_name [Symbol] name of the resource as a symbol
+      # @return [Array<Class>] Priority Array of Provider Classes to use for the resource_name on the node
+      def get_provider_priority_array(resource_name)
+        raise NotImplementedError, "this will no longer work"
+      end
+
+      # Get the array of resources associated with a resource_name for the current node
+      #
+      # @param resource_name [Symbol] name of the resource as a symbol
+      # @return [Array<Class>] Priority Array of Resource Classes to use for the resource_name on the node
+      def get_resource_priority_array(resource_name)
+        raise NotImplementedError, "this will no longer work"
+      end
+
+      # Set the array of providers associated with a resource_name for the current node
+      #
+      # @param resource_name [Symbol] name of the resource as a symbol
+      # @param priority_array [Array<Class>] Array of Classes to set as the priority for resource_name on the node
+      # @param filter [Hash] Chef::Nodearray-style filter
+      # @return [Array<Class>] Modified Priority Array of Provider Classes to use for the resource_name on the node
+      def set_provider_priority_array(resource_name, priority_array, *filter)
+        raise NotImplementedError, "this will no longer work"
+      end
+
+      # Get the array of resources associated with a resource_name for the current node
+      #
+      # @param resource_name [Symbol] name of the resource as a symbol
+      # @param priority_array [Array<Class>] Array of Classes to set as the priority for resource_name on the node
+      # @param filter [Hash] Chef::Nodearray-style filter
+      # @return [Array<Class>] Modified Priority Array of Resource Classes to use for the resource_name on the node
+      def set_resource_priority_array(resource_name, priority_array, *filter)
+        raise NotImplementedError, "this will no longer work"
+      end
+
+    end
+    include BackcompatBreak
   end
 end

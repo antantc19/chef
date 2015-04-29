@@ -299,11 +299,57 @@ ERROR_MESSAGE
       @reboot_info.size > 0
     end
 
+    #
+    # The list of resource classes for this Chef run.
+    #
+    # @example
+    # ```ruby
+    # run_context.resource_classes.file
+    #   #=> Chef::Resource::File
+    # ```
+    #
+    def resource_classes
+      @resource_classes ||= ResourceClasses.new(run_context)
+    end
+
+    #
+    # The list of provider classes for this Chef run.
+    #
+    # @example
+    # ```ruby
+    # run_context.provider_classes.file
+    #   #=> Chef::Provider::File
+    # ```
+    #
+    def provider_classes
+      run_context = self
+      @provider_classes ||= Object.new.tap do
+        @run_context = run_context
+        attr_reader :run_context
+        extend Chef::DSL::Providers
+      end
+    end
+
     private
 
     def loaded_recipe(cookbook, recipe)
       @loaded_recipes["#{cookbook}::#{recipe}"] = true
     end
 
+    class ResourceClasses
+      def initialize(run_context)
+        @run_context = run_context
+      end
+      attr_reader :run_context
+      include Chef::DSL::Resources
+    end
+
+    class ProviderClasses
+      def initialize(run_context)
+        @run_context = run_context
+      end
+      attr_reader :run_context
+      include Chef::DSL::Providers
+    end
   end
 end

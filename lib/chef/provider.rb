@@ -165,6 +165,13 @@ class Chef
       converge_actions.add_action(descriptions, &block)
     end
 
+    #
+    # The module Chef::Mixin::Provides will use to register providers.
+    #
+    def self.provides_dsl_module
+      Chef::DSL::Resources::DeclaredProviders
+    end
+
     protected
 
     def converge_actions
