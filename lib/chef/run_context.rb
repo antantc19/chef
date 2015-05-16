@@ -492,7 +492,7 @@ ERROR_MESSAGE
     #
     # Create a child RunContext.
     #
-    def push
+    def create_child
       ChildRunContext.new(self)
     end
 
@@ -567,7 +567,8 @@ ERROR_MESSAGE
       # Triggers the compile phase of the chef run.
       #
       # @param run_list_expansion [Chef::RunList::RunListExpansion] The run list.
-      # @see Chef::RunContext::CookbookCompiler
+      #
+      # @see Chef::RunContext::CookbookCompiler#compile
       #
       def load(run_list_expansion)
         @cookbook_compiler = CookbookCompiler.new(self, run_list_expansion, events)

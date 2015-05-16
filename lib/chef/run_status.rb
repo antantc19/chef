@@ -21,6 +21,10 @@
 # start and end time, and any Exception that stops the run. RunStatus objects
 # are passed to any notification or exception handlers at the completion of a
 # Chef run.
+
+#
+# Tracks a Chef run.
+#
 class Chef::RunStatus
 
   attr_reader :events
@@ -39,7 +43,12 @@ class Chef::RunStatus
 
   attr_accessor :run_id
 
-  attr_accessor :node
+  def node
+    run_context.node
+  end
+  def events
+    run_context.events
+  end
 
   def initialize(node, events)
     @node = node

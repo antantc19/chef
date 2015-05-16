@@ -179,23 +179,15 @@ class Chef
     end
 
     def recipe_eval(&block)
-      # This block has new resource definitions within it, which
-      # essentially makes it an in-line Chef run. Save our current
-      # run_context and create one anew, so the new Chef run only
-      # executes the embedded resources.
-      #
-      # TODO: timh,cw: 2010-5-14: This means that the resources within
-      # this block cannot interact with resources outside, e.g.,
-      # manipulating notifies.
-
       converge_by ("evaluate block and run any associated actions") do
-        saved_run_context = run_context
-        begin
-          @run_context = run_context.create_child
-          instance_eval(&block)
-          Chef::Runner.new(run_context).converge
-        ensure
-          @run_context = saved_run_context
+        run_context.converge_child do |child_context|
+          saved_run_context = run_context
+          @run_context = child_context
+          begin
+            instance_eval(&block)
+          ensure
+            @run_context = saved_run_context
+          end
         end
       end
     end

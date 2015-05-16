@@ -124,6 +124,5 @@ class Chef
         run_context.node.normal[:tags].delete(tag)
       end
     end
-
   end
 end
