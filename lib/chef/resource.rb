@@ -52,42 +52,6 @@ class Chef
     extend Chef::Mixin::Provides
 
     #
-    # Define an action on this resource.
-    #
-    # The action is defined as a *recipe* block that will be compiled and then
-    # converged when the action is taken (when Resource is converged).  The recipe
-    # has access to the resource's attributes and methods, as well as the Chef
-    # recipe DSL.
-    #
-    # Resources in the action recipe may notify and subscribe to other resources
-    # within the action recipe, but cannot notify or subscribe to resources
-    # in the main Chef run.
-    #
-    # Resource actions are *inheritable*: if resource A defines `action :create`
-    # and B is a subclass of A, B gets all of A's actions.  Additionally,
-    # resource B can define `action :create` and call `super()` to invoke A's
-    # action code.
-    #
-    # @param name [Symbol] The action name to define.
-    # @param recipe_block The recipe to run when the action is taken. This block
-    #   takes no parameters, and will be evaluated in a new context containing:
-    #
-    #   - The resource's public and protected methods (including attributes)
-    #   - The Chef Recipe DSL (file, etc.)
-    #   - super() referring to the parent version of the action (if any)
-    #
-    # @return The Action class implementing the action
-    #
-    def self.action(action, &recipe_block)
-      action = action.to_sym
-      self.action_classes[action] ||= Class.new(ActionRecipe) do
-        resource_class self
-        action action
-        recipe_block recipe_block
-      end
-    end
-
-    #
     # The node the current Chef run is using.
     #
     # Corresponds to `run_context.node`.
@@ -137,8 +101,13 @@ class Chef
       @before = nil
       @params = Hash.new
       @provider = nil
-      @allowed_actions = [ :nothing ]
-      @action = :nothing
+      # Allowed actions include all actions defined on the resource
+      @allowed_actions ||= self.class.action_classes.keys
+      # Default action is the first action *not* defined by Chef::Resource
+      @action ||= allowed_actions.select do |action|
+        !self.class.action_classes.has_key?(action) ||
+         self.class.action_classes[action].resource_class != Chef::Resource
+      end.first
       @updated = false
       @updated_by_last_action = false
       @supports = {}
@@ -206,7 +175,7 @@ class Chef
         action_list.each do |action|
           validate(
             { action: action },
-            { action: { kind_of: Symbol, equal_to: @allowed_actions } }
+            { action: { kind_of: Symbol, equal_to: allowed_actions } }
           )
         end
         @action = action_list
@@ -922,6 +891,60 @@ class Chef
       @provider_base ||= Chef::Provider
     end
 
+    #
+    # Define an action on this resource.
+    #
+    # The action is defined as a *recipe* block that will be compiled and then
+    # converged when the action is taken (when Resource is converged).  The recipe
+    # has access to the resource's attributes and methods, as well as the Chef
+    # recipe DSL.
+    #
+    # Resources in the action recipe may notify and subscribe to other resources
+    # within the action recipe, but cannot notify or subscribe to resources
+    # in the main Chef run.
+    #
+    # Resource actions are *inheritable*: if resource A defines `action :create`
+    # and B is a subclass of A, B gets all of A's actions.  Additionally,
+    # resource B can define `action :create` and call `super()` to invoke A's
+    # action code.
+    #
+    # @param name [Symbol] The action name to define.
+    # @param recipe_block The recipe to run when the action is taken. This block
+    #   takes no parameters, and will be evaluated in a new context containing:
+    #
+    #   - The resource's public and protected methods (including attributes)
+    #   - The Chef Recipe DSL (file, etc.)
+    #   - super() referring to the parent version of the action (if any)
+    #
+    # @return The Action class implementing the action
+    #
+    def self.action(action, &recipe_block)
+      action = action.to_sym
+      parent_class = superclass.action_classes[action] if self != Chef::Resource
+      parent_class ||= ActionRecipe
+      @action_classes[action] = Class.new(parent_class) do
+        resource_class self
+        action action
+        recipe_block recipe_block
+      end
+    end
+
+    #
+    # Get the classes handling each action.
+    #
+    # @return [Hash[String => ActionRecipe]] A hash from :action => action class
+    #
+    # @api private
+    def self.action_classes
+      @action_classes ||= {}
+      super.merge(@action_classes)
+    end
+
+    #
+    # An action that does nothing.
+    #
+    action :nothing do
+    end
 
     #
     # Internal Resource Interface (for Chef)
