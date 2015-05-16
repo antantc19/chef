@@ -75,28 +75,23 @@ class Chef
     #
     # @return [Chef::Node]
     #
-    attr_accessor :node
+    def node
+      run_status.node
+    end
 
     #
     # The ohai system used by this client.
     #
     # @return [Ohai::System]
     #
-    attr_accessor :ohai
+    attr_reader :ohai
 
     #
     # The rest object used to communicate with the Chef server.
     #
     # @return [Chef::REST]
     #
-    attr_accessor :rest
-
-    #
-    # The runner used to converge.
-    #
-    # @return [Chef::Runner]
-    #
-    attr_accessor :runner
+    attr_reader :rest
 
     #
     # Extra node attributes that were applied to the node.
@@ -135,13 +130,12 @@ class Chef
     # @param args [Hash] Options:
     # @option args [Array<RunList::RunListItem>] :override_runlist A runlist to
     #   use instead of the node's embedded run list.
-    # @option args [] :specific_recipes Recipes to run after all cookbooks have
-    #   been compiled and loaded.
+    # @option args [Array<String>] :specific_recipes A list of recipe file paths
+    #   to load after the run list has been loaded.
     #
     def initialize(json_attribs=nil, args={})
       @json_attribs = json_attribs || {}
       @node = nil
-      @runner = nil
       @ohai = Ohai::System.new
 
       event_handlers = configure_formatters + configure_event_loggers
@@ -409,8 +403,8 @@ class Chef
     #
     def load_node
       policy_builder.load_node
-      @node = policy_builder.node
-      Chef.set_node(@node)
+      run_status.node = policy_builder.node
+      Chef.set_node(policy_builder.node)
       node
     end
 
@@ -451,7 +445,7 @@ class Chef
     #
     # @api private
     def setup_run_context
-      run_context = policy_builder.setup_run_context(@specific_recipes)
+      run_context = policy_builder.setup_run_context(specific_recipes)
       assert_cookbook_path_not_empty(run_context)
       run_status.run_context = run_context
       run_context
@@ -465,7 +459,7 @@ class Chef
     # @api private
     #
     def policy_builder
-      @policy_builder ||= Chef::PolicyBuilder.strategy.new(node_name, ohai.data, json_attribs, @override_runlist, events)
+      @policy_builder ||= Chef::PolicyBuilder.strategy.new(node_name, ohai.data, json_attribs, override_runlist, events)
     end
 
     #
@@ -618,7 +612,8 @@ class Chef
         begin
           @events.converge_start(run_context)
           Chef::Log.debug("Converging node #{node_name}")
-          @runner = Chef::Runner.new(run_context)
+          runner = Chef::Runner.new(run_context)
+          @runner = runner
           runner.converge
           @events.converge_complete
         rescue Exception => e
@@ -671,8 +666,7 @@ class Chef
     # Triggers the audit_phase_start, audit_phase_complete and
     # audit_phase_failed events.
     #
-    # @param run_context The run context. (Deprecated, don't bother passing
-    #   this, it is already in the class.)
+    # @param run_context The run context.
     #
     # @return Any thrown exceptions. `nil` if successful.
     #
@@ -684,7 +678,6 @@ class Chef
     # @api private
     #
     def run_audits(run_context)
-      audit_exception = nil
       begin
         @events.audit_phase_start(run_status)
         Chef::Log.info("Starting audit phase")
@@ -694,12 +687,12 @@ class Chef
           raise Chef::Exceptions::AuditsFailed.new(auditor.num_failed, auditor.num_total)
         end
         @events.audit_phase_complete
+        nil
       rescue Exception => e
         Chef::Log.error("Audit phase failed with error message: #{e.message}")
         @events.audit_phase_failed(e)
-        audit_exception = e
+        e
       end
-      audit_exception
     end
 
     #
@@ -763,8 +756,20 @@ class Chef
     #
     STDERR_FD = STDERR
 
+    #
+    # Deprecated writers
+    #
+
+    include Chef::Mixin::Deprecation
+    deprecated_attr_writer :node, "There is no alternative. Leave node alone!"
+    deprecated_attr_writer :ohai, "There is no alternative. Leave ohai alone!"
+    deprecated_attr_writer :rest, "There is no alternative. Leave rest alone!"
+    deprecated_attr :runner, "There is no alternative. Leave runner alone!"
 
     private
+
+    attr_reader :override_runlist
+    attr_reader :specific_recipes
 
     def empty_directory?(path)
       !File.exists?(path) || (Dir.entries(path).size <= 2)
@@ -789,6 +794,7 @@ class Chef
       else
         Chef::Log.warn("Node #{node_name} has an empty run list.") if run_context.node.run_list.empty?
       end
+
     end
 
     def has_admin_privileges?
