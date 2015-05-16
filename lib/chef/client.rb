@@ -50,6 +50,7 @@ require 'chef/run_lock'
 require 'chef/policy_builder'
 require 'chef/request_id'
 require 'chef/platform/rebooter'
+require 'chef/client/notification_registry'
 require 'ohai'
 require 'rbconfig'
 
@@ -60,135 +61,14 @@ class Chef
   class Client
     include Chef::Mixin::PathSanity
 
-    #
-    # IO stream that will be used as 'STDOUT' for formatters. Formatters are
-    # configured during `initialize`, so this provides a convenience for
-    # setting alternative IO stream during tests.
-    #
-    # @api private
-    #
-    STDOUT_FD = STDOUT
+    extend NotificationRegistry
 
     #
-    # IO stream that will be used as 'STDERR' for formatters. Formatters are
-    # configured during `initialize`, so this provides a convenience for
-    # setting alternative IO stream during tests.
+    # The status of the Chef run.
     #
-    # @api private
+    # @return [Chef::RunStatus]
     #
-    STDERR_FD = STDERR
-
-    #
-    # Clears all listeners for client run status events.
-    #
-    # Primarily for testing purposes.
-    #
-    # @api private
-    #
-    def self.clear_notifications
-      @run_start_notifications = nil
-      @run_completed_successfully_notifications = nil
-      @run_failed_notifications = nil
-    end
-
-    #
-    # Listeners to be run when the client run starts.
-    #
-    # @return [Array<Proc>]
-    #
-    # @api private
-    #
-    def self.run_start_notifications
-      @run_start_notifications ||= []
-    end
-
-    #
-    # Listeners to be run when the client run completes successfully.
-    #
-    # @return [Array<Proc>]
-    #
-    # @api private
-    #
-    def self.run_completed_successfully_notifications
-      @run_completed_successfully_notifications ||= []
-    end
-
-    #
-    # Listeners to be run when the client run fails.
-    #
-    # @return [Array<Proc>]
-    #
-    # @api private
-    #
-    def self.run_failed_notifications
-      @run_failed_notifications ||= []
-    end
-
-    #
-    # Add a listener for the 'client run started' event.
-    #
-    # @param notification_block The callback (takes |run_status| parameter).
-    # @yieldparam [Chef::RunStatus] run_status The run status.
-    #
-    def self.when_run_starts(&notification_block)
-      run_start_notifications << notification_block
-    end
-
-    #
-    # Add a listener for the 'client run success' event.
-    #
-    # @param notification_block The callback (takes |run_status| parameter).
-    # @yieldparam [Chef::RunStatus] run_status The run status.
-    #
-    def self.when_run_completes_successfully(&notification_block)
-      run_completed_successfully_notifications << notification_block
-    end
-
-    #
-    # Add a listener for the 'client run failed' event.
-    #
-    # @param notification_block The callback (takes |run_status| parameter).
-    # @yieldparam [Chef::RunStatus] run_status The run status.
-    #
-    def self.when_run_fails(&notification_block)
-      run_failed_notifications << notification_block
-    end
-
-    #
-    # Callback to fire notifications that the Chef run is starting
-    #
-    # @api private
-    #
-    def run_started
-      self.class.run_start_notifications.each do |notification|
-        notification.call(run_status)
-      end
-      @events.run_started(run_status)
-    end
-
-    #
-    # Callback to fire notifications that the run completed successfully
-    #
-    # @api private
-    #
-    def run_completed_successfully
-      success_handlers = self.class.run_completed_successfully_notifications
-      success_handlers.each do |notification|
-        notification.call(run_status)
-      end
-    end
-
-    #
-    # Callback to fire notifications that the Chef run failed
-    #
-    # @api private
-    #
-    def run_failed
-      failure_handlers = self.class.run_failed_notifications
-      failure_handlers.each do |notification|
-        notification.call(run_status)
-      end
-    end
+    attr_reader :run_status
 
     #
     # The node represented by this client.
@@ -224,13 +104,6 @@ class Chef
     # @return [Hash]
     #
     attr_reader :json_attribs
-
-    #
-    # The status of the Chef run.
-    #
-    # @return [Chef::RunStatus]
-    #
-    attr_reader :run_status
 
     #
     # The event dispatcher for the Chef run, including any configured output
@@ -283,6 +156,144 @@ class Chef
       if new_runlist = args.delete(:runlist)
         @json_attribs["run_list"] = new_runlist
       end
+    end
+
+    #
+    # Do a full run for this Chef::Client.
+    #
+    # Locks the run while doing its job.
+    #
+    # Fires run_start before doing anything and fires run_completed or
+    # run_failed when finished.  Also notifies client listeners of run_started
+    # at the beginning of Compile, and run_completed_successfully or run_failed
+    # when all is complete.
+    #
+    # Phase 1: Setup
+    # --------------
+    # Gets information about the system and the run we are doing.
+    #
+    # 1. Run ohai to collect system information.
+    # 2. Register / connect to the Chef server (unless in solo mode).
+    # 3. Retrieve the node (or create a new one).
+    # 4. Merge in json_attribs, Chef::Config.environment, and override_run_list.
+    #
+    # Phase 2: Compile
+    # ----------------
+    # Decides *what* we plan to converge by compiling recipes.
+    #
+    # 1. Sync required cookbooks to the local cache.
+    # 2. Load libraries from all cookbooks.
+    # 3. Load attributes from all cookbooks.
+    # 4. Load LWRPs from all cookbooks.
+    # 5. Load resource definitions from all cookbooks.
+    # 6. Load recipes in the run list.
+    # 7. Load recipes from the command line.
+    #
+    # Phase 3: Converge
+    # -----------------
+    # Brings the system up to date.
+    #
+    # 1. Converge the resources built from recipes in Phase 2.
+    # 2. Save the node.
+    # 3. Reboot if we were asked to.
+    #
+    # @raise [Chef::Exceptions::RunFailedWrappingError] If converge or audit failed.
+    #
+    # @see Chef::Config#lockfile
+    # @see Chef::Config#enforce_path_sanity
+    # @see Chef::Config#solo
+    # @see Chef::Config#audit_mode
+    #
+    # @see Chef::RunLock#acquire
+    # @see #run_ohai
+    # @see #load_node
+    # @see #build_node
+    # @see Chef::CookbookCompiler#compile
+    #
+    # @see #setup_run_context Syncs and compiles cookbooks.
+    #
+    # @return Always returns true.
+    #
+    def run
+      runlock = RunLock.new(Chef::Config.lockfile)
+      # TODO feels like acquire should have its own block arg for this
+      runlock.acquire
+      # don't add code that may fail before entering this section to be sure to release lock
+      begin
+        runlock.save_pid
+
+        request_id = Chef::RequestID.instance.request_id
+        run_context = nil
+        @events.run_start(Chef::VERSION)
+        Chef::Log.info("*** Chef #{Chef::VERSION} ***")
+        Chef::Log.info "Chef-client pid: #{Process.pid}"
+        Chef::Log.debug("Chef-client request_id: #{request_id}")
+        enforce_path_sanity
+        run_ohai
+
+        register unless Chef::Config[:solo]
+
+        load_node
+
+        build_node
+
+        run_status.run_id = request_id
+        run_status.start_clock
+        Chef::Log.info("Starting Chef Run for #{node.name}")
+        run_started
+
+        do_windows_admin_check
+
+        run_context = setup_run_context
+
+        if Chef::Config[:audit_mode] != :audit_only
+          converge_error = converge_and_save(run_context)
+        end
+
+        if Chef::Config[:why_run] == true
+          # why_run should probably be renamed to why_converge
+          Chef::Log.debug("Not running controls in 'why_run' mode - this mode is used to see potential converge changes")
+        elsif Chef::Config[:audit_mode] != :disabled
+          audit_error = run_audits(run_context)
+        end
+
+        if converge_error || audit_error
+          e = Chef::Exceptions::RunFailedWrappingError.new(converge_error, audit_error)
+          e.fill_backtrace
+          raise e
+        end
+
+        run_status.stop_clock
+        Chef::Log.info("Chef Run complete in #{run_status.elapsed_time} seconds")
+        run_completed_successfully
+        @events.run_completed(node)
+
+        # rebooting has to be the last thing we do, no exceptions.
+        Chef::Platform::Rebooter.reboot_if_needed!(node)
+
+        true
+
+      rescue Exception => e
+        # CHEF-3336: Send the error first in case something goes wrong below and we don't know why
+        Chef::Log.debug("Re-raising exception: #{e.class} - #{e.message}\n#{e.backtrace.join("\n  ")}")
+        # If we failed really early, we may not have a run_status yet. Too early for these to be of much use.
+        if run_status
+          run_status.stop_clock
+          run_status.exception = e
+          run_failed
+        end
+        Chef::Application.debug_stacktrace(e)
+        @events.run_failed(e)
+        raise
+      ensure
+        Chef::RequestID.instance.reset_request_id
+        request_id = nil
+        @run_status = nil
+        run_context = nil
+        runlock.release
+        GC.start
+      end
+      true
     end
 
     #
@@ -347,6 +358,42 @@ class Chef
         Chef::Audit::AuditReporter.new(rest)
       ].each do |r|
         events.register(r)
+      end
+    end
+
+    #
+    # Callback to fire notifications that the Chef run is starting
+    #
+    # @api private
+    #
+    def run_started
+      self.class.run_start_notifications.each do |notification|
+        notification.call(run_status)
+      end
+      @events.run_started(run_status)
+    end
+
+    #
+    # Callback to fire notifications that the run completed successfully
+    #
+    # @api private
+    #
+    def run_completed_successfully
+      success_handlers = self.class.run_completed_successfully_notifications
+      success_handlers.each do |notification|
+        notification.call(run_status)
+      end
+    end
+
+    #
+    # Callback to fire notifications that the Chef run failed
+    #
+    # @api private
+    #
+    def run_failed
+      failure_handlers = self.class.run_failed_notifications
+      failure_handlers.each do |notification|
+        notification.call(run_status)
       end
     end
 
@@ -699,142 +746,23 @@ class Chef
     end
 
     #
-    # Do a full run for this Chef::Client.
+    # IO stream that will be used as 'STDOUT' for formatters. Formatters are
+    # configured during `initialize`, so this provides a convenience for
+    # setting alternative IO stream during tests.
     #
-    # Locks the run while doing its job.
+    # @api private
     #
-    # Fires run_start before doing anything and fires run_completed or
-    # run_failed when finished.  Also notifies client listeners of run_started
-    # at the beginning of Compile, and run_completed_successfully or run_failed
-    # when all is complete.
+    STDOUT_FD = STDOUT
+
     #
-    # Phase 1: Setup
-    # --------------
-    # Gets information about the system and the run we are doing.
+    # IO stream that will be used as 'STDERR' for formatters. Formatters are
+    # configured during `initialize`, so this provides a convenience for
+    # setting alternative IO stream during tests.
     #
-    # 1. Run ohai to collect system information.
-    # 2. Register / connect to the Chef server (unless in solo mode).
-    # 3. Retrieve the node (or create a new one).
-    # 4. Merge in json_attribs, Chef::Config.environment, and override_run_list.
+    # @api private
     #
-    # Phase 2: Compile
-    # ----------------
-    # Decides *what* we plan to converge by compiling recipes.
-    #
-    # 1. Sync required cookbooks to the local cache.
-    # 2. Load libraries from all cookbooks.
-    # 3. Load attributes from all cookbooks.
-    # 4. Load LWRPs from all cookbooks.
-    # 5. Load resource definitions from all cookbooks.
-    # 6. Load recipes in the run list.
-    # 7. Load recipes from the command line.
-    #
-    # Phase 3: Converge
-    # -----------------
-    # Brings the system up to date.
-    #
-    # 1. Converge the resources built from recipes in Phase 2.
-    # 2. Save the node.
-    # 3. Reboot if we were asked to.
-    #
-    # @raise [Chef::Exceptions::RunFailedWrappingError] If converge or audit failed.
-    #
-    # @see Chef::Config#lockfile
-    # @see Chef::Config#enforce_path_sanity
-    # @see Chef::Config#solo
-    # @see Chef::Config#audit_mode
-    #
-    # @see Chef::RunLock#acquire
-    # @see #run_ohai
-    # @see #load_node
-    # @see #build_node
-    # @see Chef::CookbookCompiler#compile
-    #
-    # @see #setup_run_context Syncs and compiles cookbooks.
-    #
-    # @return Always returns true.
-    #
-    def run
-      runlock = RunLock.new(Chef::Config.lockfile)
-      # TODO feels like acquire should have its own block arg for this
-      runlock.acquire
-      # don't add code that may fail before entering this section to be sure to release lock
-      begin
-        runlock.save_pid
+    STDERR_FD = STDERR
 
-        request_id = Chef::RequestID.instance.request_id
-        run_context = nil
-        @events.run_start(Chef::VERSION)
-        Chef::Log.info("*** Chef #{Chef::VERSION} ***")
-        Chef::Log.info "Chef-client pid: #{Process.pid}"
-        Chef::Log.debug("Chef-client request_id: #{request_id}")
-        enforce_path_sanity
-        run_ohai
-
-        register unless Chef::Config[:solo]
-
-        load_node
-
-        build_node
-
-        run_status.run_id = request_id
-        run_status.start_clock
-        Chef::Log.info("Starting Chef Run for #{node.name}")
-        run_started
-
-        do_windows_admin_check
-
-        run_context = setup_run_context
-
-        if Chef::Config[:audit_mode] != :audit_only
-          converge_error = converge_and_save(run_context)
-        end
-
-        if Chef::Config[:why_run] == true
-          # why_run should probably be renamed to why_converge
-          Chef::Log.debug("Not running controls in 'why_run' mode - this mode is used to see potential converge changes")
-        elsif Chef::Config[:audit_mode] != :disabled
-          audit_error = run_audits(run_context)
-        end
-
-        if converge_error || audit_error
-          e = Chef::Exceptions::RunFailedWrappingError.new(converge_error, audit_error)
-          e.fill_backtrace
-          raise e
-        end
-
-        run_status.stop_clock
-        Chef::Log.info("Chef Run complete in #{run_status.elapsed_time} seconds")
-        run_completed_successfully
-        @events.run_completed(node)
-
-        # rebooting has to be the last thing we do, no exceptions.
-        Chef::Platform::Rebooter.reboot_if_needed!(node)
-
-        true
-
-      rescue Exception => e
-        # CHEF-3336: Send the error first in case something goes wrong below and we don't know why
-        Chef::Log.debug("Re-raising exception: #{e.class} - #{e.message}\n#{e.backtrace.join("\n  ")}")
-        # If we failed really early, we may not have a run_status yet. Too early for these to be of much use.
-        if run_status
-          run_status.stop_clock
-          run_status.exception = e
-          run_failed
-        end
-        Chef::Application.debug_stacktrace(e)
-        @events.run_failed(e)
-        raise
-      ensure
-        Chef::RequestID.instance.reset_request_id
-        request_id = nil
-        @run_status = nil
-        run_context = nil
-        runlock.release
-        GC.start
-      end
-      true
-    end
 
     private
 
@@ -861,7 +789,6 @@ class Chef
       else
         Chef::Log.warn("Node #{node_name} has an empty run list.") if run_context.node.run_list.empty?
       end
-
     end
 
     def has_admin_privileges?
