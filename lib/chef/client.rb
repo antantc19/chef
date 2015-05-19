@@ -55,6 +55,338 @@ require 'ohai'
 require 'rbconfig'
 
 class Chef
+  module CookbookState
+    #
+    # The cookbook version that was loaded.
+    #
+    # @return [CookbookVersion]
+    #
+    attr_reader :cookbook_version
+
+    #
+    # Libraries loaded by this cookbook.
+    #
+    # In-progress and failed library loads will show up in this list;
+    # library files that have not yet been loaded will *not*.
+    #
+    # Paths are relative to the cookbook root and include `.rb` (e.g.
+    # `libraries/default.rb`).
+    #
+    # If attributes have not yet started to load, this will be `nil`.
+    #
+    # @return [Set<String>] A list of relative library paths that were loaded,
+    #   in the order they were loaded; ; or `nil` if we have not tried to load libraries.
+    #
+    attr_reader :loaded_libraries
+
+    #
+    # Attribute files loaded by this cookbook.
+    #
+    # In-progress and failed attribute loads will show up in this list;
+    # attribute files that have not yet been loaded will *not*.
+    #
+    # Paths are relative to the cookbook root and include `.rb` (e.g.
+    # `attributes/default.rb`).
+    #
+    # If attributes have not yet started to load, this will be `nil`.
+    #
+    # @return [Enumerable<String>] A list of relative attribute paths that were loaded,
+    #   in the order they were loaded; or `nil` if we have not tried to load attributes.
+    #
+    attr_reader :loaded_attributes
+
+    #
+    # LWRP resource classes loaded by this cookbook.
+    #
+    # In-progress resource loads will show up in this list as `nil` if not yet
+    # loaded, and the class will show up even if it is only partially loaded.
+    # Failed resource loads will show up `nil`.  Use `has_key?` to determine if
+    # the LWRP attempted to load.
+    #
+    # Paths are relative to the cookbook root and include `.rb` (e.g.
+    # `resources/my_resource.rb`).
+    #
+    # If resources have not yet started to load, this will be `nil`.
+    #
+    # @return [Hash<String, Class>] A hash of LWRP classes, from name to
+    #   loaded class; or `nil` if we have not tried to load LWRPs.
+    #
+    attr_reader :loaded_lwrp_resources
+
+    #
+    # LWRP provider classes loaded by this cookbook.
+    #
+    # In-progress provider loads will show up in this list as `nil` if not yet
+    # loaded, and the class will show up even if it is only partially loaded.
+    # Failed provider loads will show up `nil`.  Use `has_key?` to determine if
+    # the LWRP attempted to load.
+    #
+    # Paths are relative to the cookbook root and include `.rb` (e.g.
+    # `providers/my_resource.rb`).
+    #
+    # If providers have not yet started to load, this will be `nil`.
+    #
+    # @return [Hash<String, Class>] A hash of LWRP classes, from name to
+    #   loaded class; or `nil` if we have not tried to load LWRPs.
+    #
+    attr_reader :loaded_lwrp_providers
+
+    #
+    # Definitions loaded by this cookbook.
+    #
+    # In-progress provider loads will show up in this list as `nil` if not yet
+    # loaded, and the class will show up even if it is only partially loaded.
+    # Failed provider loads will show up `nil`.  Use `has_key?` to determine if
+    # the LWRP attempted to load.
+    #
+    # Paths are relative to the cookbook root and include `.rb` (e.g.
+    # `providers/my_resource.rb`).
+    #
+    # @return [Hash<String, Class>] A hash of LWRP classes, from name to
+    #   loaded class; or `nil` if we have not tried to load definitions.
+    # If definitions have not yet started to load, this will be `nil`.
+    #
+    attr_reader :loaded_definitions
+  end
+
+  #
+  # Represents the state of a Chef run: ohai data, loaded cookbooks, etc.
+  #
+  # @see Chef#run_status
+  #
+  class RunStatus
+    #
+    # The Chef run ID.
+    #
+    # @return [String]
+    #
+    attr_reader :run_id
+
+    #
+    # Configuration.
+    #
+    # @return [Chef::Config]
+    #
+    attr_reader :config
+
+    #
+    # Ohai data.
+    #
+    # @return [Ohai::System]
+    #
+    attr_reader :ohai
+
+    #
+    # The node we are running against, or `nil` if it is not yet set / loaded.
+    #
+    # @return [Chef::Node]
+    #
+    attr_reader :node
+
+    #
+    # List of loaded cookbooks and their state.
+    #
+    # @return [Hash<String, CookbookState>] A hash from cookbook name -> loaded
+    #   cookbook.
+    #
+    attr_reader :loaded_cookbooks
+
+    #
+    # Resource classes registered for each DSL method.
+    #
+    # @return [ResourcePriorityMap]
+    #
+    attr_reader :resource_dsl_providers
+
+    #
+    # Provider classes registered for each DSL method.
+    #
+    # @return [ProviderPriorityMap]
+    #
+    attr_reader :provider_providers
+
+    #
+    # Full list of definitions.
+    #
+    # @return [Hash<String, ResourceDefinition>]
+    attr_reader :definitions
+
+    #
+    # The root converger.
+    #
+    attr_reader :converger
+  end
+
+  #
+  # The Chef run.  This includes its state as well as methods to affect it.
+  #
+  # Only one Chef run may exist at a time, and it is global.  This is because
+  # the things inside can only happen once even if there were multiple runs:
+  # cookbook libraries, for example, often create named classes.
+  #
+  class Run < RunStatus
+    include Singleton
+
+    #
+    # Run the given ohai plugins.
+    #
+    # @param plugin_names [Array<String>] The list of plugins to run.  If none
+    #   are specified, all plugins will be run.
+    #
+    def run_ohai(*plugin_names)
+    end
+
+    #
+    # Load the given cookbooks, in the given order.
+    #
+    # Cookbooks will be loaded in the specified order.  This will *not* run any
+    # recipes.
+    #
+    # @param cookbooks [Array<CookbookVersion>] The list of cookbooks, in the
+    #   order they need to be loaded.
+    #
+    def load_cookbooks(*cookbooks)
+    end
+
+    def config
+      Chef::Config
+    end
+
+    private
+
+    def initialize
+      @run_id = Chef::RequestID.instance.request_id
+      @ohai = Ohai::System.new
+    end
+  end
+
+  class RunContext
+    #
+    # The parent RunContext (for notifications).
+    #
+    # @return [Chef::RunContext] The parent RunContext, or `nil` if this is the
+    #   root RunContext.
+    #
+    attr_reader :parent
+
+    #
+    # The top-level Chef run we are a part of.
+    #
+    # @return [Chef::Run]
+    #
+    def chef_run
+      Chef
+    end
+
+    #
+    # The resource collection containing our resources.
+    #
+    # @return [Chef::ResourceCollection]
+    #
+    attr_reader :resource_collection
+
+    #
+    # Create a new RunContext.
+    #
+    # @param parent [Chef::RunContext] The parent run_context
+    #
+    # @api private
+    #
+    def initialize(parent: nil)
+      @parent = parent
+
+      parent_resource_collection = parent.resource_collection if parent
+      @resource_collection = Chef::ResourceCollection.new(parent: parent_resource_collection)
+    end
+
+    def compile(run_list: nil, recipe_files: nil, &recipe_block)
+      if run_list
+      end
+      if recipe_files
+      end
+      if recipe_block
+        recipe_dsl.instance_eval(&recipe_block)
+      end
+      resolve_notifications
+    end
+
+    def converge(run_list: nil, recipe_files: nil, &recipe_block)
+      if run_list || recipe_files || recipe_block
+        compile(run_list: run_list, recipe_files: recipe_files, &recipe_block)
+      end
+
+      while take_next_action
+      end
+    end
+
+    #
+    # Take the next action we're supposed to take.
+    #
+    # @return [Array<Chef::Resource, Symbol>] The resource and action(s)
+    #   that were taken, or `nil` if no action was taken.  If `Symbol` was `nil`,
+    #   the next resource was added to the queue but no action was taken yet.
+    #
+    def take_next_action
+      # TODO this isn't threadsafe on all Rubies (requires atomic increment)
+      @taking_actions += 1
+      begin
+        # Process any immediate actions
+        next_action = immediate_notifications.unshift
+        if next_action
+          next_action.resource.run_action(next_action.action)
+          return
+        end
+
+        # Take the next resource in the queue and add a queue entry for each;
+        # then take the next action.
+        resource = resource_collection.next
+        if resource
+          # TODO seems like it'd be nice to do this in "resource.converge_resource"
+          # or something users could call outside the system.
+          actions = Array(resource.action)
+          actions.each do |action|
+            notify(Notification.new(resource, action), immediately: true)
+          end
+          # Go ahead and take the next action.
+          return take_next_action
+        end
+
+        # Process any delayed actions
+        next_action = delayed_notifications.unshift
+        if next_action
+          next_action.resource.run_action(next_action.action)
+          return [next_action.resource, next_action.action]
+        end
+
+      ensure
+        @taking_actions -= 1
+      end
+    end
+
+    private
+
+    attr_reader :taking_actions
+  end
+
+  # TODO deal with ResourceCollection.insert.  People actually use this ...
+  # and in a parallel world it makes much less sense.  It makes more sense to
+  # insert resources after whichever resource you are currently converging (and
+  # there may be more than one).
+
+  # @api private
+  class ActionRunner
+    # @api private
+    attr_reader :resource_collection
+    # @api private
+    attr_reader :actions
+
+    protected
+
+    def initialize
+      @run_queue = Queue.new
+    end
+  end
+
   # == Chef::Client
   # The main object in a Chef run. Preps a Chef::Node and Chef::RunContext,
   # syncs cookbooks if necessary, and triggers convergence.
