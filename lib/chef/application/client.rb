@@ -263,6 +263,11 @@ class Chef::Application::Client < Chef::Application
     :description    => "Whether a local mode (-z) server binds to a port",
     :boolean        => true
 
+  option :ruby_profile,
+    :long           => "--ruby-profile",
+    :description    => "Whether or not to enable Ruby profiling during the client application run",
+    :boolean        => false
+
   IMMEDIATE_RUN_SIGNAL = "1".freeze
 
   attr_reader :chef_client_json

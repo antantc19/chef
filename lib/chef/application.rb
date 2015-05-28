@@ -28,6 +28,7 @@ require 'chef/platform'
 require 'mixlib/cli'
 require 'tmpdir'
 require 'rbconfig'
+require 'chef/ruby_profiler'
 
 class Chef
   class Application
@@ -57,7 +58,7 @@ class Chef
       setup_signal_handlers
       reconfigure
       setup_application
-      run_application
+      Chef::RubyProfiler.profile(config) { run_application }
     end
 
     def setup_signal_handlers

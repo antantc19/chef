@@ -720,6 +720,36 @@ module ChefConfig
     # break Chef community cookbooks and is very highly discouraged.
     default :ruby_encoding, Encoding::UTF_8
 
+    # Whether or not to enable Ruby profiling
+    default :ruby_profile, false
+
+    # Which part of the Ruby VM to profile
+    # https://github.com/ruby-prof/ruby-prof/blob/master/README.rdoc#measurements
+    #
+    # We support using the standard RUBY_PROF_MEASURE_MODE environment variables:
+    #   wall, process, cpu, allocations, memory, gc_time, gc_runs
+    #
+    # We also support configuring this in the client.rb/knife.rb:
+    #   wall_time, process_time, cpu_time, allocations, memory, gc_time, gc_runs
+    default(:ruby_profile_measure_mode) do
+      mode = env['RUBY_PROF_MEASURE_MODE'] || 'memory'
+      case mode
+      when 'wall', 'process', 'cpu'
+        mode = "#{mode}_time"
+      end
+      mode
+    end
+
+    # Path to a file to print profiling results
+    default :ruby_profile_outfile, nil
+
+    # Which profile printer to use
+    # https://github.com/ruby-prof/ruby-prof/blob/master/README.rdoc#printers
+    # Available printers:
+    #   flat_printer, flat_printer_with_line_numbers, graph_printer, graph_html_printer,
+    #   dot_printer, call_tree_printer, call_stack_printer
+    default :ruby_profile_printer, 'flat_printer'
+
     # If installed via an omnibus installer, this gives the path to the
     # "embedded" directory which contains all of the software packaged with
     # omnibus. This is used to locate the cacert.pem file on windows.
