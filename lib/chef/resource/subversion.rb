@@ -24,11 +24,9 @@ class Chef
     class Subversion < Chef::Resource::Scm
       allowed_actions :force_export
 
-      def initialize(name, run_context=nil)
-        super
-        @svn_arguments = '--no-auth-cache'
-        @svn_info_args = '--no-auth-cache'
-      end
+      # From parent
+      property :svn_arguments, [ String, nil ], coerce: proc { |arg| arg == false ? nil : arg }, default: '--no-auth-cache'
+      property :svn_info_args, [ String, nil ], coerce: proc { |arg| arg == false ? nil : arg }, default: '--no-auth-cache'
 
       # Override exception to strip password if any, so it won't appear in logs and different Chef notifications
       def custom_exception_message(e)

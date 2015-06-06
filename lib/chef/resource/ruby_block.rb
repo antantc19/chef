@@ -27,27 +27,8 @@ class Chef
       allowed_actions :create, :run
 
       identity_attr :block_name
-
-      def initialize(name, run_context=nil)
-        super
-        @block_name = name
-      end
-
-      def block(&block)
-        if block_given? and block
-          @block = block
-        else
-          @block
-        end
-      end
-
-      def block_name(arg=nil)
-        set_or_return(
-          :block_name,
-          arg,
-          :kind_of => String
-        )
-      end
+      property :block_name, String, name_property: true
+      property :block, Proc, coerce: proc { |v=nil, &block| v || block }
     end
   end
 end

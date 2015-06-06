@@ -25,11 +25,8 @@ class Chef
       provides :paludis_package, os: "linux"
 
       allowed_actions :install, :remove, :upgrade
-
-      def initialize(name, run_context=nil)
-        super(name, run_context)
-        @timeout = 3600
-      end
+      # Override from parent, to change the default
+      property :timeout, [ String, Integer ], default: 3600
     end
   end
 end

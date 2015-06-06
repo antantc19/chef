@@ -22,28 +22,18 @@ require 'chef/resource/gem_package'
 class Chef
   class Resource
     class ChefGem < Chef::Resource::Package::GemPackage
-
-      def initialize(name, run_context=nil)
-        super
-        @compile_time = Chef::Config[:chef_gem_compile_time]
-        @gem_binary = RbConfig::CONFIG['bindir'] + "/gem"
-      end
+      property :compile_time, [ true, false ], default: lazy { Chef::Config[:chef_gem_compile_time] }
+      property :gem_binary, String, default: lazy { RbConfig::CONFIG['bindir'] + "/gem" }
 
       # The chef_gem resources is for installing gems to the current gem environment only for use by Chef cookbooks.
       def gem_binary(arg=nil)
         if arg
           raise ArgumentError, "The chef_gem resource is restricted to the current gem environment, use gem_package to install to other environments."
         end
-
-        @gem_binary
+        super
       end
-
-      def compile_time(arg=nil)
-        set_or_return(
-          :compile_time,
-          arg,
-          :kind_of => [ TrueClass, FalseClass ]
-        )
+      def gem_binary=(arg)
+        gem_binary(arg)
       end
 
       def after_created

@@ -29,14 +29,7 @@ class Chef
         @allow_downgrade = false
       end
 
-      def allow_downgrade(arg=nil)
-        set_or_return(
-          :allow_downgrade,
-          arg,
-          :kind_of => [ TrueClass, FalseClass ]
-        )
-      end
-
+      property :allow_downgrade, [ true, false ], default: false
     end
   end
 end

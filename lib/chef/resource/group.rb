@@ -20,84 +20,22 @@
 class Chef
   class Resource
     class Group < Chef::Resource
-
       identity_attr :group_name
-
       state_attrs :members
 
       allowed_actions :create, :remove, :modify, :manage
       default_action :create
 
-      def initialize(name, run_context=nil)
-        super
-        @group_name = name
-        @gid = nil
-        @members = []
-        @excluded_members = []
-        @append = false
-        @non_unique = false
-      end
-
-      def group_name(arg=nil)
-        set_or_return(
-          :group_name,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
-
-      def gid(arg=nil)
-        set_or_return(
-          :gid,
-          arg,
-          :kind_of => [ String, Integer ]
-        )
-      end
-
-      def members(arg=nil)
-        converted_members = arg.is_a?(String) ? [].push(arg) : arg
-        set_or_return(
-          :members,
-          converted_members,
-          :kind_of => [ Array ]
-        )
-      end
-
+      identity_attr :group_name
+      state_attrs :members
+      property :group_name, String, name_property: true
+      property :gid, [ String, Integer ]
+      property :members, Array, default: lazy { [] }, coerce: { |v| Array(v) }
       alias_method :users, :members
-
-      def excluded_members(arg=nil)
-        converted_members = arg.is_a?(String) ? [].push(arg) : arg
-        set_or_return(
-          :excluded_members,
-          converted_members,
-          :kind_of => [ Array ]
-        )
-      end
-
-
-      def append(arg=nil)
-        set_or_return(
-          :append,
-          arg,
-          :kind_of => [ TrueClass, FalseClass ]
-        )
-      end
-
-      def system(arg=nil)
-        set_or_return(
-          :system,
-          arg,
-          :kind_of => [ TrueClass, FalseClass ]
-        )
-      end
-
-      def non_unique(arg=nil)
-        set_or_return(
-          :non_unique,
-          arg,
-          :kind_of => [ TrueClass, FalseClass ]
-        )
-      end
+      property :excluded_members, Array, default: lazy { [] }, coerce: { |v| Array(v) }
+      property :append, [ true, false ], default: false
+      property :system, [ true, false ]
+      property :non_unique, [ true, false ], default: false
     end
   end
 end

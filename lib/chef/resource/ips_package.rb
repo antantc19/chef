@@ -28,18 +28,7 @@ class Chef
 
       allowed_actions :install, :remove, :upgrade
 
-      def initialize(name, run_context = nil)
-        super(name, run_context)
-        @accept_license = false
-      end
-
-      def accept_license(arg=nil)
-        set_or_return(
-          :purge,
-          arg,
-          :kind_of => [ TrueClass, FalseClass ]
-        )
-      end
+      property :accept_license, [ true, false ], default: false
     end
   end
 end

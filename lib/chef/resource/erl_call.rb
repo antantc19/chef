@@ -26,59 +26,19 @@ class Chef
 
       # erl_call : http://erlang.org/doc/man/erl_call.html
 
+      default_action :run
       identity_attr :code
 
-      default_action :run
-
-      def initialize(name, run_context=nil)
-        super
-
-        @code = "q()." # your erlang code goes here
-        @cookie = nil # cookie of the erlang node
-        @distributed = false # if you want to have a distributed erlang node
-        @name_type = "sname" # type of erlang hostname name or sname
-        @node_name = "chef@localhost" # the erlang node hostname
-      end
-
-      def code(arg=nil)
-        set_or_return(
-          :code,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
-
-      def cookie(arg=nil)
-        set_or_return(
-          :cookie,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
-
-      def distributed(arg=nil)
-        set_or_return(
-          :distributed,
-          arg,
-          :kind_of => [ TrueClass, FalseClass ]
-        )
-      end
-
-      def name_type(arg=nil)
-        set_or_return(
-          :name_type,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
-
-      def node_name(arg=nil)
-        set_or_return(
-          :node_name,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
+      # your erlang code goes here
+      property :code, String, default: "q()."
+      # cookie of the erlang node
+      property :cookie, String
+      # if you want to have a distributed erlang node
+      property :distributed, [ true, false ], default: false
+      # type of erlang hostname name or sname
+      property :name_type, String, "sname"
+      # the erlang node hostname
+      property :node_name, String, "chef@localhost"
 
     end
   end

@@ -22,9 +22,11 @@ require 'chef/mixin/windows_architecture_helper'
 class Chef
   class Resource
     class WindowsScript < Chef::Resource::Script
-      # This is an abstract resource meant to be subclasses; thus no 'provides'
+      guard_inherited_attributes :architecture
 
-      set_guard_inherited_attributes(:architecture)
+      property :architecture, [ :x86_64, :i386 ], callbacks: {
+        "is not compatible with this computer's architecture" => proc { |a| assert_architecture_compatible!(a);  }
+      }
 
       protected
 
@@ -36,19 +38,6 @@ class Chef
       end
 
       include Chef::Mixin::WindowsArchitectureHelper
-
-      public
-
-      def architecture(arg=nil)
-        assert_architecture_compatible!(arg) if ! arg.nil?
-        result = set_or_return(
-          :architecture,
-          arg,
-          :kind_of => Symbol
-        )
-      end
-
-      protected
 
       def assert_architecture_compatible!(desired_architecture)
         if ! node_supports_windows_architecture?(node, desired_architecture)

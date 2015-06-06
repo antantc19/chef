@@ -24,16 +24,9 @@ class Chef
 
       def initialize(name, run_context=nil)
         super(name, run_context, nil, "powershell.exe")
-        @convert_boolean_return = false
       end
 
-      def convert_boolean_return(arg=nil)
-        set_or_return(
-          :convert_boolean_return,
-          arg,
-          :kind_of => [ FalseClass, TrueClass ]
-        )
-      end
+      property :convert_boolean_return, [ true, false ], default: false
 
       # Allow callers evaluating guards to request default
       # attribute values. This is needed to allow

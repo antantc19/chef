@@ -22,123 +22,33 @@ require 'chef/resource'
 class Chef
   class Resource
     class Service < Chef::Resource
-      identity_attr :service_name
-
-      state_attrs :enabled, :running
-
       default_action :nothing
       allowed_actions :enable, :disable, :start, :stop, :restart, :reload
 
-      def initialize(name, run_context=nil)
-        super
-        @service_name = name
-        @enabled = nil
-        @running = nil
-        @parameters = nil
-        @pattern = service_name
-        @start_command = nil
-        @stop_command = nil
-        @status_command = nil
-        @restart_command = nil
-        @reload_command = nil
-        @init_command = nil
-        @priority = nil
-        @timeout = nil
-        @supports = { :restart => false, :reload => false, :status => false }
-      end
-
-      def service_name(arg=nil)
-        set_or_return(
-          :service_name,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
-
+      identity_attr :service_name
+      state_attrs :enabled, :running
+      property :service_name, String, name_property: true
       # regex for match against ps -ef when !supports[:has_status] && status == nil
-      def pattern(arg=nil)
-        set_or_return(
-          :pattern,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
-
+      property :pattern, String, default: lazy { service_name }
       # command to call to start service
-      def start_command(arg=nil)
-        set_or_return(
-          :start_command,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
-
+      property :start_command, String
       # command to call to stop service
-      def stop_command(arg=nil)
-        set_or_return(
-          :stop_command,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
-
+      property :stop_command, String
       # command to call to get status of service
-      def status_command(arg=nil)
-        set_or_return(
-          :status_command,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
-
+      property :status_command, String
       # command to call to restart service
-      def restart_command(arg=nil)
-        set_or_return(
-          :restart_command,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
-
-      def reload_command(arg=nil)
-        set_or_return(
-          :reload_command,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
-
+      property :restart_command, String
+      property :reload_command, String
       # The path to the init script associated with the service. On many
       # distributions this is '/etc/init.d/SERVICE_NAME' by default. In
       # non-standard configurations setting this value will save having to
       # specify overrides for the start_command, stop_command and
       # restart_command attributes.
-      def init_command(arg=nil)
-        set_or_return(
-          :init_command,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
-
+      property :init_command, String
       # if the service is enabled or not
-      def enabled(arg=nil)
-        set_or_return(
-          :enabled,
-          arg,
-          :kind_of => [ TrueClass, FalseClass ]
-        )
-      end
-
+      property :enabled, [ true, false ]
       # if the service is running or not
-      def running(arg=nil)
-        set_or_return(
-          :running,
-          arg,
-          :kind_of => [ TrueClass, FalseClass ]
-        )
-      end
-
+      property :running, [ true, false ]
       # Priority arguments can have two forms:
       #
       # - a simple number, in which the default start runlevels get
@@ -149,31 +59,12 @@ class Chef
       #   runlevel 2, stopped in 3 with priority 55 and no symlinks or
       #   similar for other runlevels
       #
-      def priority(arg=nil)
-        set_or_return(
-          :priority,
-          arg,
-          :kind_of => [ Integer, String, Hash ]
-        )
-      end
-
+      property :priority, [ Integer, String, Hash ]
       # timeout only applies to the windows service manager
-      def timeout(arg=nil)
-        set_or_return(
-          :timeout,
-          arg,
-          :kind_of => Integer
-        )
-      end
-
-      def parameters(arg=nil)
-        set_or_return(
-          :parameters,
-          arg,
-          :kind_of => [ Hash ]
-        )
-      end
-
+      property :timeout, Integer
+      property :parameters, Hash
+      # TODO "{}" is treated as a get, and this doesn't support that ...
+#      property :supports, Hash, default: lazy { { :restart => false, :reload => false, :status => false } }, coerce: { |v| v.is_a?(Array) ? supports.merge(v.map { |v| [ v, true ] }) : v }
       def supports(args={})
         if args.is_a? Array
           args.each { |arg| @supports[arg] = true }

@@ -29,21 +29,8 @@ class Chef
 
       default_action :create
 
-      def initialize(name, run_context=nil)
-        super
-        @provider = Chef::Provider::CookbookFile
-        @source = ::File.basename(name)
-        @cookbook = nil
-      end
-
-      def source(source_filename=nil)
-        set_or_return(:source, source_filename, :kind_of => [ String, Array ])
-      end
-
-      def cookbook(cookbook_name=nil)
-        set_or_return(:cookbook, cookbook_name, :kind_of => String)
-      end
-
+      property :source, [ String, Array ], default: lazy { ::File.basename(name) }
+      property :cookbook, String
     end
   end
 end

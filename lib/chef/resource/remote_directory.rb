@@ -26,98 +26,30 @@ class Chef
     class RemoteDirectory < Chef::Resource::Directory
       include Chef::Mixin::Securable
 
-      identity_attr :path
-
-      state_attrs :files_owner, :files_group, :files_mode
-
       default_action :create
       allowed_actions :create, :create_if_missing, :delete
 
-      def initialize(name, run_context=nil)
-        super
-        @path = name
-        @source = ::File.basename(name)
-        @delete = false
-        @recursive = true
-        @purge = false
-        @files_backup = 5
-        @files_owner = nil
-        @files_group = nil
-        @files_mode = 0644 unless Chef::Platform.windows?
-        @overwrite = true
-        @cookbook = nil
+      identity_attr :path
+      state_attrs :files_owner, :files_group, :files_mode
+      property :source, String, default: lazy { ::File.basename(path) }
+      property :files_backup, [ Integer, false ], default: 5
+      property :purge, [ true, false ], default: false
+      property :recursive, [ true, false ], default: true
+      property :delete, [ true, false ], default: false
+      property :overwrite, [ true, false ], default: true
+      property :files_group, Chef::Config[:group_valid_regex]
+      property :files_owner, Chef::Config[:user_valid_regex]
+      if Chef::Platform.windows?
+        property :files_mode, /^\d{3,4}$/
+      else
+        property :files_mode, /^\d{3,4}$/, default: 0644
       end
+      property :cookbook, String
 
       if Chef::Platform.windows?
         # create a second instance of the 'rights' attribute
         rights_attribute(:files_rights)
       end
-
-
-      def source(args=nil)
-        set_or_return(
-          :source,
-          args,
-          :kind_of => String
-        )
-      end
-
-      def files_backup(arg=nil)
-        set_or_return(
-          :files_backup,
-          arg,
-          :kind_of => [ Integer, FalseClass ]
-        )
-      end
-
-      def purge(arg=nil)
-        set_or_return(
-          :purge,
-          arg,
-          :kind_of => [ TrueClass, FalseClass ]
-        )
-      end
-
-      def files_group(arg=nil)
-        set_or_return(
-          :files_group,
-          arg,
-          :regex => Chef::Config[:group_valid_regex]
-        )
-      end
-
-      def files_mode(arg=nil)
-        set_or_return(
-          :files_mode,
-          arg,
-          :regex => /^\d{3,4}$/
-        )
-      end
-
-      def files_owner(arg=nil)
-        set_or_return(
-          :files_owner,
-          arg,
-          :regex => Chef::Config[:user_valid_regex]
-        )
-      end
-
-      def overwrite(arg=nil)
-        set_or_return(
-          :overwrite,
-          arg,
-          :kind_of => [ TrueClass, FalseClass ]
-        )
-      end
-
-      def cookbook(args=nil)
-        set_or_return(
-          :cookbook,
-          args,
-          :kind_of => String
-        )
-      end
-
     end
   end
 end

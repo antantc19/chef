@@ -57,65 +57,45 @@ class Chef
       # may want to extend the state_attrs API with the ability to rename POST'd attrs.
       #
       # See lib/chef/resource_reporter.rb for more information.
-      attr_reader :unscrubbed_values
-
-      def initialize(name, run_context=nil)
-        super
-        @architecture = :machine
-        @recursive = false
-        @key = name
-        @values, @unscrubbed_values = [], []
+      def unscrubbed_values
+        @unscrubbed_values ||= []
       end
 
-      def key(arg=nil)
-        set_or_return(
-          :key,
-          arg,
-          :kind_of => String
-        )
-      end
+      identity_attr :key
+      state_attrs :values
+      property :key, String, name_property: true
+      property :values, Array, lazy: { [] }, coerce: proc do |arg|
+        case arg
+        when Hash
+          arg = [ arg ]
+        when Array
+        else
+          raise ArgumentError, "Bad type for RegistryKey resource, use Hash or Array"
+        end
 
-      def values(arg=nil)
-        if not arg.nil?
-          if arg.is_a?(Hash)
-            @values = [ arg ]
-          elsif arg.is_a?(Array)
-            @values = arg
-          else
-            raise ArgumentError, "Bad type for RegistryKey resource, use Hash or Array"
+        arg.each do |v|
+          raise ArgumentError, "Missing name key in RegistryKey values hash" unless v.has_key?(:name)
+          raise ArgumentError, "Missing type key in RegistryKey values hash" unless v.has_key?(:type)
+          raise ArgumentError, "Missing data key in RegistryKey values hash" unless v.has_key?(:data)
+          v.each_key do |key|
+            raise ArgumentError, "Bad key #{key} in RegistryKey values hash" unless [:name,:type,:data].include?(key)
           end
-
-          @values.each do |v|
-            raise ArgumentError, "Missing name key in RegistryKey values hash" unless v.has_key?(:name)
-            raise ArgumentError, "Missing type key in RegistryKey values hash" unless v.has_key?(:type)
-            raise ArgumentError, "Missing data key in RegistryKey values hash" unless v.has_key?(:data)
-            v.each_key do |key|
-              raise ArgumentError, "Bad key #{key} in RegistryKey values hash" unless [:name,:type,:data].include?(key)
-            end
-            raise ArgumentError, "Type of name => #{v[:name]} should be string" unless v[:name].is_a?(String)
-            raise Argument Error "Type of type => #{v[:name]} should be symbol" unless v[:type].is_a?(Symbol)
-          end
-          @unscrubbed_values = @values
-        elsif self.instance_variable_defined?(:@values)
-          scrub_values(@values)
+          raise ArgumentError, "Type of name => #{v[:name]} should be string" unless v[:name].is_a?(String)
+          raise Argument Error "Type of type => #{v[:name]} should be symbol" unless v[:type].is_a?(Symbol)
         end
       end
-
-      def recursive(arg=nil)
-        set_or_return(
-          :recursive,
-          arg,
-          :kind_of => [TrueClass, FalseClass]
-        )
+      def values(arg=NOT_PASSED)
+        result = super
+        if !arg.nil? && arg != NOT_PASSED
+          @unscrubbed_values = result
+        elsif property_is_set?(:values)
+          scrub_values(result)
+        else
+          result
+        end
       end
-
-      def architecture(arg=nil)
-        set_or_return(
-          :architecture,
-          arg,
-          :kind_of => Symbol
-        )
-      end
+      property :recursive, [ true, false ], default: false
+      property :architecture, Symbol, default: :machine
 
       private
 

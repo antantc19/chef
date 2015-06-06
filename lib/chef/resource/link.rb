@@ -26,7 +26,6 @@ class Chef
       include Chef::Mixin::Securable
 
       identity_attr :target_file
-
       state_attrs :to, :owner, :group
 
       default_action :create
@@ -35,51 +34,15 @@ class Chef
       def initialize(name, run_context=nil)
         verify_links_supported!
         super
-        @to = nil
-        @link_type = :symbolic
-        @target_file = name
       end
 
-      def to(arg=nil)
-        set_or_return(
-          :to,
-          arg,
-          :kind_of => String
-        )
-      end
-
-      def target_file(arg=nil)
-        set_or_return(
-          :target_file,
-          arg,
-          :kind_of => String
-        )
-      end
-
-      def link_type(arg=nil)
-        real_arg = arg.kind_of?(String) ? arg.to_sym : arg
-        set_or_return(
-          :link_type,
-          real_arg,
-          :equal_to => [ :symbolic, :hard ]
-        )
-      end
-
-      def group(arg=nil)
-        set_or_return(
-          :group,
-          arg,
-          :regex => Chef::Config[:group_valid_regex]
-        )
-      end
-
-      def owner(arg=nil)
-        set_or_return(
-          :owner,
-          arg,
-          :regex => Chef::Config[:user_valid_regex]
-        )
-      end
+      identity_attr :target_file
+      state_attrs :to, :owner, :group
+      property :target_file, String, name_property: true
+      property :to, String
+      property :link_type, [ :symbolic, :hard ], default: :symbolic
+      property :group, Chef::Config[:group_valid_regex]
+      property :owner, Chef::Config[:user_valid_regex]
 
       # make link quack like a file (XXX: not for public consumption)
       def path

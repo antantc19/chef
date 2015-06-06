@@ -26,19 +26,14 @@ class Chef
 
       def initialize(name, run_context=nil)
         super
-        @flush_cache = { :before => false, :after => false }
         @allow_downgrade = false
       end
 
       # Install a specific arch
-      def arch(arg=nil)
-        set_or_return(
-          :arch,
-          arg,
-          :kind_of => [ String, Array ]
-        )
-      end
-
+      property :arch, [ String, Array ]
+      property :allow_downgrade, [ true, false ], default: false
+      # TODO "{}" is treated as a get, and this doesn't support that ...
+#      property :flush_cache, Hash, default: lazy { { :before => false, :after => false } }, coerce: { |v| v.is_a?(Array) ? supports.merge(v.map { |v| [ v, true ] }) : v }
       def flush_cache(args={})
         if args.is_a? Array
           args.each { |arg| @flush_cache[arg] = true }
@@ -48,15 +43,6 @@ class Chef
           @flush_cache
         end
       end
-
-      def allow_downgrade(arg=nil)
-        set_or_return(
-          :allow_downgrade,
-          arg,
-          :kind_of => [ TrueClass, FalseClass ]
-        )
-      end
-
     end
   end
 end

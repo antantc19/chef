@@ -50,80 +50,15 @@ class Chef
       default_action :create
       allowed_actions :create, :delete, :touch, :create_if_missing
 
-      def initialize(name, run_context=nil)
-        super
-        @path = name
-        @backup = 5
-        @atomic_update = Chef::Config[:file_atomic_update]
-        @force_unlink = false
-        @manage_symlink_source = nil
-        @diff = nil
-        @verifications = []
-      end
+      property :path, String, name_property: true
 
-      def content(arg=nil)
-        set_or_return(
-          :content,
-          arg,
-          :kind_of => String
-        )
-      end
-
-      def backup(arg=nil)
-        set_or_return(
-          :backup,
-          arg,
-          :kind_of => [ Integer, FalseClass ]
-        )
-      end
-
-      def checksum(arg=nil)
-        set_or_return(
-          :checksum,
-          arg,
-          :regex => /^[a-zA-Z0-9]{64}$/
-        )
-      end
-
-      def path(arg=nil)
-        set_or_return(
-          :path,
-          arg,
-          :kind_of => String
-        )
-      end
-
-      def diff(arg=nil)
-        set_or_return(
-          :diff,
-          arg,
-          :kind_of => String
-        )
-      end
-
-      def atomic_update(arg=nil)
-        set_or_return(
-          :atomic_update,
-          arg,
-          :kind_of => [ TrueClass, FalseClass ]
-        )
-      end
-
-      def force_unlink(arg=nil)
-        set_or_return(
-          :force_unlink,
-          arg,
-          :kind_of => [ TrueClass, FalseClass ]
-        )
-      end
-
-      def manage_symlink_source(arg=nil)
-        set_or_return(
-          :manage_symlink_source,
-          arg,
-          :kind_of => [ TrueClass, FalseClass ]
-        )
-      end
+      property :backup, [ Integer, false ], default: 5
+      property :checksum, /^[a-zA-Z0-9]{64}$/
+      property :content, String
+      property :diff, String
+      property :atomic_update, [ true, false ], default: lazy { Chef::Config[:file_atomic_update] }
+      property :force_unlink, [ true, false ], default: false
+      property :manage_symlink_source, [ true, false ]
 
       def verify(command=nil, opts={}, &block)
         if ! (command.nil? || [String, Symbol].include?(command.class))
@@ -131,9 +66,9 @@ class Chef
         end
 
         if command || block_given?
-          @verifications << Verification.new(self, command, opts, &block)
+          verifications << Verification.new(self, command, opts, &block)
         else
-          @verifications
+          verifications
         end
       end
 
@@ -144,6 +79,12 @@ class Chef
           state_attrs[:checksum] = final_checksum
         end
         state_attrs
+      end
+
+      private
+
+      def verifications
+        @verifications ||= []
       end
     end
   end

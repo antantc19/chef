@@ -40,6 +40,7 @@ require 'chef/mixin/deprecation'
 require 'chef/mixin/provides'
 require 'chef/mixin/shell_out'
 require 'chef/mixin/powershell_out'
+require 'chef/resource/treat_property_defaults_as_initial_values'
 
 class Chef
   class Resource

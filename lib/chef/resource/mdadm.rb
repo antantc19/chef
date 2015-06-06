@@ -22,82 +22,21 @@ require 'chef/resource'
 class Chef
   class Resource
     class Mdadm < Chef::Resource
-
       identity_attr :raid_device
-
       state_attrs :devices, :level, :chunk
 
       default_action :create
       allowed_actions :create, :assemble, :stop
 
-      def initialize(name, run_context=nil)
-        super
-
-        @chunk = 16
-        @devices = []
-        @exists = false
-        @level = 1
-        @metadata = "0.90"
-        @bitmap = nil
-        @raid_device = name
-      end
-
-      def chunk(arg=nil)
-        set_or_return(
-          :chunk,
-          arg,
-          :kind_of => [ Integer ]
-        )
-      end
-
-      def devices(arg=nil)
-        set_or_return(
-          :devices,
-          arg,
-          :kind_of => [ Array ]
-        )
-      end
-
-      def exists(arg=nil)
-        set_or_return(
-          :exists,
-          arg,
-          :kind_of => [ TrueClass, FalseClass ]
-        )
-      end
-
-      def level(arg=nil)
-        set_or_return(
-          :level,
-          arg,
-          :kind_of => [ Integer ]
-        )
-      end
-
-      def metadata(arg=nil)
-        set_or_return(
-          :metadata,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
-
-      def bitmap(arg=nil)
-        set_or_return(
-          :bitmap,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
-
-      def raid_device(arg=nil)
-        set_or_return(
-          :raid_device,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
-
+      identity_attr :raid_device
+      state_attrs :devices, :level, :chunk
+      property :raid_device, String, name_property: true
+      property :chunk, Integer, default: 16
+      property :devices, Array, default: lazy { [] }
+      property :exists, [ true, false ], default: false
+      property :level, Integer, default: 1
+      property :metadata, String, default: "0.90"
+      property :bitmap, String
 
     end
   end

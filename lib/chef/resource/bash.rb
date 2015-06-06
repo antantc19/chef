@@ -22,12 +22,6 @@ require 'chef/provider/script'
 class Chef
   class Resource
     class Bash < Chef::Resource::Script
-
-      def initialize(name, run_context=nil)
-        super
-        @interpreter = "bash"
-      end
-
     end
   end
 end

@@ -36,6 +36,7 @@
 # end
 
 require "chef/resource/scm"
+require "chef/provider/git"
 
 class Chef
   class Resource
@@ -58,273 +59,58 @@ class Chef
       default_action :deploy
       allowed_actions :force_deploy, :deploy, :rollback
 
-      def initialize(name, run_context=nil)
-        super
-        @deploy_to = name
-        @environment = nil
-        @repository_cache = 'cached-copy'
-        @copy_exclude = []
-        @purge_before_symlink = %w{log tmp/pids public/system}
-        @create_dirs_before_symlink = %w{tmp public config}
-        @symlink_before_migrate = {"config/database.yml" => "config/database.yml"}
-        @symlinks = {"system" => "public/system", "pids" => "tmp/pids", "log" => "log"}
-        @revision = 'HEAD'
-        @migrate = false
-        @rollback_on_error = false
-        @remote = "origin"
-        @enable_submodules = false
-        @shallow_clone = false
-        @scm_provider = Chef::Provider::Git
-        @svn_force_export = false
-        @additional_remotes = Hash[]
-        @keep_releases = 5
-        @enable_checkout = true
-        @checkout_branch = "deploy"
-      end
-
-      # where the checked out/cloned code goes
-      def destination
-        @destination ||= shared_path + "/#{@repository_cache}"
-      end
-
-      # where shared stuff goes, i.e., logs, tmp, etc. goes here
-      def shared_path
-        @shared_path ||= @deploy_to + "/shared"
-      end
-
-      # where the deployed version of your code goes
-      def current_path
-        @current_path ||= @deploy_to + "/current"
-      end
-
-      def depth
-        @shallow_clone ? "5" : nil
-      end
 
       # note: deploy_to is your application "meta-root."
-      def deploy_to(arg=nil)
-        set_or_return(
-          :deploy_to,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
-
-      def repo(arg=nil)
-        set_or_return(
-          :repo,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
+      property :deploy_to, String, name_property: true
+      property :repo, String
       alias :repository :repo
-
-      def remote(arg=nil)
-        set_or_return(
-          :remote,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
-
-      def role(arg=nil)
-        set_or_return(
-          :role,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
-
-      def restart_command(arg=nil, &block)
-        arg ||= block
-        set_or_return(
-          :restart_command,
-          arg,
-          :kind_of => [ String, Proc ]
-        )
-      end
+      property :remote, String, default: "origin"
+      property :role, String
+      property :restart_command, [ String, Proc ], coerce: proc { |arg=nil, &block| arg || &block}
       alias :restart :restart_command
 
-      def migrate(arg=nil)
-        set_or_return(
-          :migrate,
-          arg,
-          :kind_of => [ TrueClass, FalseClass ]
-        )
-      end
+      property :migrate, [ true, false ], default: false
+      property :migration_command, String
 
-      def migration_command(arg=nil)
-        set_or_return(
-          :migration_command,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
+      property :rollback_on_error, [ true, false ], default: false
 
-      def rollback_on_error(arg=nil)
-        set_or_return(
-          :rollback_on_error,
-          arg,
-          :kind_of => [ TrueClass, FalseClass ]
-        )
-      end
+      property :user, String
+      property :group, String
 
-      def user(arg=nil)
-        set_or_return(
-          :user,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
+      property :enable_submodules, [ true, false ], default: false
+      property :shallow_clone, [ true, false ], default: false
+      property :repository_cache, String, default: 'cached-copy'
+      property :copy_exclude, String, default: lazy { [] }
+      property :revision, String, default: 'HEAD'
 
-      def group(arg=nil)
-        set_or_return(
-          :group,
-          arg,
-          :kind_of => [ String ]
-        )
+      property :scm_provider, Class, default: Chef::Provider::Git, coerce: proc do |arg|
+        arg = lookup_provider_constant(arg) if arg.kind_of?(String) || arg.kind_of?(Symbol)
+        arg
       end
-
-      def enable_submodules(arg=nil)
-        set_or_return(
-          :enable_submodules,
-          arg,
-          :kind_of => [ TrueClass, FalseClass ]
-        )
-      end
-
-      def shallow_clone(arg=nil)
-        set_or_return(
-          :shallow_clone,
-          arg,
-          :kind_of => [ TrueClass, FalseClass ]
-        )
-      end
-
-      def repository_cache(arg=nil)
-        set_or_return(
-          :repository_cache,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
-
-      def copy_exclude(arg=nil)
-        set_or_return(
-          :copy_exclude,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
-
-      def revision(arg=nil)
-        set_or_return(
-          :revision,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
-      alias :branch :revision
-
-      def git_ssh_wrapper(arg=nil)
-        set_or_return(
-          :git_ssh_wrapper,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
+      property :git_ssh_wrapper, String
       alias :ssh_wrapper :git_ssh_wrapper
+      property :svn_username, String
+      property :svn_password, String
+      property :svn_arguments, String
+      property :svn_info_args, String
+      property :svn_force_export, [ true, false ], default: false
 
-      def svn_username(arg=nil)
-        set_or_return(
-          :svn_username,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
-
-      def svn_password(arg=nil)
-        set_or_return(
-          :svn_password,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
-
-      def svn_arguments(arg=nil)
-        set_or_return(
-          :svn_arguments,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
-
-      def svn_info_args(arg=nil)
-        set_or_return(
-          :svn_arguments,
-          arg,
-          :kind_of => [ String ])
-      end
-
-      def scm_provider(arg=nil)
-        klass = if arg.kind_of?(String) || arg.kind_of?(Symbol)
-                  lookup_provider_constant(arg)
-                else
-                  arg
-                end
-        set_or_return(
-          :scm_provider,
-          klass,
-          :kind_of => [ Class ]
-        )
-      end
-
-      # This is to support "provider :revision" without deprecation warnings.
-      # Do NOT copy this.
-      def self.provider_base
-        Chef::Provider::Deploy
-      end
-
-      def svn_force_export(arg=nil)
-        set_or_return(
-          :svn_force_export,
-          arg,
-          :kind_of => [ TrueClass, FalseClass ]
-        )
-      end
-
-      def environment(arg=nil)
+      property :environment, Hash, coerce: proc do |arg|
         if arg.is_a?(String)
           Chef::Log.debug "Setting RAILS_ENV, RACK_ENV, and MERB_ENV to `#{arg}'"
           Chef::Log.warn "[DEPRECATED] please modify your deploy recipe or attributes to set the environment using a hash"
           arg = {"RAILS_ENV"=>arg,"MERB_ENV"=>arg,"RACK_ENV"=>arg}
         end
-        set_or_return(
-          :environment,
-          arg,
-          :kind_of => [ Hash ]
-        )
+        arg
       end
 
-       # The number of old release directories to keep around after cleanup
-      def keep_releases(arg=nil)
-        [set_or_return(
-          :keep_releases,
-          arg,
-          :kind_of => [ Integer ]), 1].max
-      end
+      property :keep_releases, Integer, default: 5, coerce: { |v| v.is_a?(Integer) ? [ v, 1 ].max }
 
       # An array of paths, relative to your app's root, to be purged from a
       # SCM clone/checkout before symlinking. Use this to get rid of files and
       # directories you want to be shared between releases.
       # Default: ["log", "tmp/pids", "public/system"]
-      def purge_before_symlink(arg=nil)
-        set_or_return(
-          :purge_before_symlink,
-          arg,
-          :kind_of => Array
-        )
-      end
+      property :purge_before_symlink, Array, default: lazy { %w{log tmp/pids public/system} }
 
       # An array of paths, relative to your app's root, where you expect dirs to
       # exist before symlinking. This runs after #purge_before_symlink, so you
@@ -334,27 +120,7 @@ class Chef
       # then specify tmp here so that the tmp directory will exist when you
       # symlink the pids directory in to the current release.
       # Default: ["tmp", "public", "config"]
-      def create_dirs_before_symlink(arg=nil)
-        set_or_return(
-          :create_dirs_before_symlink,
-          arg,
-          :kind_of => Array
-        )
-      end
-
-      # A Hash of shared/dir/path => release/dir/path. This attribute determines
-      # which files and dirs in the shared directory get symlinked to the current
-      # release directory, and where they go. If you have a directory
-      # $shared/pids that you would like to symlink as $current_release/tmp/pids
-      # you specify it as "pids" => "tmp/pids"
-      # Default {"system" => "public/system", "pids" => "tmp/pids", "log" => "log"}
-      def symlinks(arg=nil)
-        set_or_return(
-          :symlinks,
-          arg,
-          :kind_of => Hash
-        )
-      end
+      property :create_dirs_before_symlink, Array default: %w{tmp public config}
 
       # A Hash of shared/dir/path => release/dir/path. This attribute determines
       # which files in the shared directory get symlinked to the current release
@@ -363,73 +129,59 @@ class Chef
       # For a rails/merb app, this is used to link in a known good database.yml
       # (with the production db password) before running migrate.
       # Default {"config/database.yml" => "config/database.yml"}
-      def symlink_before_migrate(arg=nil)
-        set_or_return(
-          :symlink_before_migrate,
-          arg,
-          :kind_of => Hash
-        )
-      end
+      property :symlink_before_migrate, Hash, default: {"config/database.yml" => "config/database.yml"}
 
-      # Callback fires before migration is run.
-      def before_migrate(arg=nil, &block)
-        arg ||= block
-        set_or_return(:before_migrate, arg, :kind_of => [Proc, String])
-      end
+      # A Hash of shared/dir/path => release/dir/path. This attribute determines
+      # which files and dirs in the shared directory get symlinked to the current
+      # release directory, and where they go. If you have a directory
+      # $shared/pids that you would like to symlink as $current_release/tmp/pids
+      # you specify it as "pids" => "tmp/pids"
+      # Default {"system" => "public/system", "pids" => "tmp/pids", "log" => "log"}
+      property :symlinks, Hash, default: {"system" => "public/system", "pids" => "tmp/pids", "log" => "log"}
 
-      # Callback fires before symlinking
-      def before_symlink(arg=nil, &block)
-        arg ||= block
-        set_or_return(:before_symlink, arg, :kind_of => [Proc, String])
-      end
+      property :before_migrate, [ Proc String ], coerce: proc { |arg=nil, &block| arg || block }
+      property :before_symlink, [ Proc String ], coerce: proc { |arg=nil, &block| arg || block }
+      property :before_restart, [ Proc String ], coerce: proc { |arg=nil, &block| arg || block }
+      property :after_restart,  [ Proc String ], coerce: proc { |arg=nil, &block| arg || block }
 
-      # Callback fires before restart
-      def before_restart(arg=nil, &block)
-        arg ||= block
-        set_or_return(:before_restart, arg, :kind_of => [Proc, String])
-      end
+      property :shallow_clone, default: false
 
-      # Callback fires after restart
-      def after_restart(arg=nil, &block)
-        arg ||= block
-        set_or_return(:after_restart, arg, :kind_of => [Proc, String])
-      end
+      property :additional_remotes, kind_of: Hash, default: lazy { Hash[] }
 
-      def additional_remotes(arg=nil)
-        set_or_return(
-          :additional_remotes,
-          arg,
-          :kind_of => Hash
-        )
-      end
-
-      def enable_checkout(arg=nil)
-        set_or_return(
-          :enable_checkout,
-          arg,
-          :kind_of => [TrueClass, FalseClass]
-        )
-      end
-
-      def checkout_branch(arg=nil)
-        set_or_return(
-          :checkout_branch,
-          arg,
-          :kind_of => String
-        )
-      end
+      property :enable_checkout, [true, false], default: true
+      property :checkout_branch, String, default: "deploy"
 
       # FIXME The Deploy resource may be passed to an SCM provider as its
       # resource.  The SCM provider knows that SCM resources can specify a
       # timeout for SCM operations. The deploy resource must therefore support
       # a timeout method, but the timeout it describes is for SCM operations,
       # not the overall deployment. This is potentially confusing.
-      def timeout(arg=nil)
-        set_or_return(
-          :timeout,
-          arg,
-          :kind_of => Integer
-        )
+      property :timeout, Integer
+
+      # where the checked out/cloned code goes
+      def destination
+        @destination ||= "#{shared_path}/#{repository_cache}"
+      end
+
+      # where shared stuff goes, i.e., logs, tmp, etc. goes here
+      def shared_path
+        @shared_path ||= "#{deploy_to}/shared"
+      end
+
+      # where the deployed version of your code goes
+      def current_path
+        @current_path ||= "#{deploy_to}/current"
+      end
+
+      def depth
+        shallow_clone ? "5" : nil
+      end
+
+
+      # This is to support "provider :revision" without deprecation warnings.
+      # Do NOT copy this.
+      def self.provider_base
+        Chef::Provider::Deploy
       end
 
     end

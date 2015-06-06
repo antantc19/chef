@@ -21,11 +21,7 @@ require 'chef/resource/package'
 class Chef
   class Resource
     class PortagePackage < Chef::Resource::Package
-      def initialize(name, run_context=nil)
-        super
-        @provider = Chef::Provider::Package::Portage
-      end
-
+      use_automatic_resource_name
     end
   end
 end

@@ -30,97 +30,42 @@ class Chef
       default_action :create
       allowed_actions :create, :delete
 
-      def initialize(name, run_context=nil)
-        super
-        @minute = "*"
-        @hour = "*"
-        @day = "*"
-        @month = "*"
-        @weekday = "*"
-        @command = nil
-        @user = "root"
-        @mailto = nil
-        @path = nil
-        @shell = nil
-        @home = nil
-        @time = nil
-        @environment = {}
-      end
-
-      def minute(arg=nil)
-        if arg.is_a?(Integer)
-          converted_arg = arg.to_s
-        else
-          converted_arg = arg
-        end
+      # TODO these can be DRY'd a *lot*.  Consider the type [ 0..59, '*' ]
+      property :minute, String, default: '*', coerce: proc do |arg|
+        arg = arg.to_s if arg.is_a?(Integer)
         begin
           if integerize(arg) > 59 then raise RangeError end
         rescue ArgumentError
         end
-        set_or_return(
-          :minute,
-          converted_arg,
-          :kind_of => String
-        )
+        arg
       end
-
-      def hour(arg=nil)
-        if arg.is_a?(Integer)
-          converted_arg = arg.to_s
-        else
-          converted_arg = arg
-        end
+      property :hour, String, default: '*', coerce: proc do |arg|
+        arg = arg.to_s if arg.is_a?(Integer)
         begin
           if integerize(arg) > 23 then raise RangeError end
         rescue ArgumentError
         end
-        set_or_return(
-          :hour,
-          converted_arg,
-          :kind_of => String
-        )
+        arg
       end
-
-      def day(arg=nil)
-        if arg.is_a?(Integer)
-          converted_arg = arg.to_s
-        else
-          converted_arg = arg
-        end
+      property :day, String, default: '*', coerce: proc do |arg|
+        arg = arg.to_s if arg.is_a?(Integer)
         begin
           if integerize(arg) > 31 then raise RangeError end
         rescue ArgumentError
         end
-        set_or_return(
-          :day,
-          converted_arg,
-          :kind_of => String
-        )
+        arg
       end
-
-      def month(arg=nil)
-        if arg.is_a?(Integer)
-          converted_arg = arg.to_s
-        else
-          converted_arg = arg
-        end
+      property :month, String, default: '*', coerce: proc do |arg|
+        arg = arg.to_s if arg.is_a?(Integer)
         begin
           if integerize(arg) > 12 then raise RangeError end
         rescue ArgumentError
         end
-        set_or_return(
-          :month,
-          converted_arg,
-          :kind_of => String
-        )
+        arg
       end
-
-      def weekday(arg=nil)
-        if arg.is_a?(Integer)
-          converted_arg = arg.to_s
-        else
-          converted_arg = arg
-        end
+      # Consider the type [ 0..7, Provider::Cron::WEEKDAY_SYMBOLS, '*' ]
+      property :weekday, String, default: '*', coerce: proc do |arg|
+        arg = arg.to_s if arg.is_a?(Integer)
         begin
           error_message = "You provided '#{arg}' as a weekday, acceptable values are "
           error_message << Provider::Cron::WEEKDAY_SYMBOLS.map {|sym| ":#{sym.to_s}"}.join(', ')
@@ -132,76 +77,16 @@ class Chef
           end
         rescue ArgumentError
         end
-        set_or_return(
-          :weekday,
-          converted_arg,
-          :kind_of => [String, Symbol]
-        )
+        arg
       end
-
-      def time(arg=nil)
-        set_or_return(
-          :time,
-          arg,
-          :equal_to => Chef::Provider::Cron::SPECIAL_TIME_VALUES
-        )
-      end
-
-      def mailto(arg=nil)
-        set_or_return(
-          :mailto,
-          arg,
-          :kind_of => String
-        )
-      end
-
-      def path(arg=nil)
-        set_or_return(
-          :path,
-          arg,
-          :kind_of => String
-        )
-      end
-
-      def home(arg=nil)
-        set_or_return(
-          :home,
-          arg,
-          :kind_of => String
-        )
-      end
-
-      def shell(arg=nil)
-        set_or_return(
-          :shell,
-          arg,
-          :kind_of => String
-        )
-      end
-
-      def command(arg=nil)
-        set_or_return(
-          :command,
-          arg,
-          :kind_of => String
-        )
-      end
-
-      def user(arg=nil)
-        set_or_return(
-          :user,
-          arg,
-          :kind_of => String
-        )
-      end
-
-      def environment(arg=nil)
-        set_or_return(
-          :environment,
-          arg,
-          :kind_of => Hash
-        )
-      end
+      property :command, String
+      property :user, String, default: 'root'
+      property :mailto, String
+      property :path, String
+      property :shell, String
+      property :home, String
+      property :time, Chef::Provider::Cron::SPECIAL_TIME_VALUES
+      property :environment, Hash, default: lazy { {} }
 
       private
 

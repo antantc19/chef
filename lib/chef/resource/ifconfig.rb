@@ -23,125 +23,23 @@ class Chef
   class Resource
     class Ifconfig < Chef::Resource
 
-      identity_attr :device
-
-      state_attrs :inet_addr, :mask
-
       default_action :add
       allowed_actions :add, :delete, :enable, :disable
 
-      def initialize(name, run_context=nil)
-        super
-        @target = name
-        @hwaddr = nil
-        @mask = nil
-        @inet_addr = nil
-        @bcast = nil
-        @mtu = nil
-        @metric = nil
-        @device = nil
-        @onboot = nil
-        @network = nil
-        @bootproto = nil
-        @onparent = nil
-      end
-
-      def target(arg=nil)
-        set_or_return(
-          :target,
-          arg,
-          :kind_of => String
-        )
-      end
-
-      def device(arg=nil)
-        set_or_return(
-          :device,
-          arg,
-          :kind_of => String
-        )
-      end
-
-      def hwaddr(arg=nil)
-        set_or_return(
-          :hwaddr,
-          arg,
-          :kind_of => String
-        )
-      end
-
-      def inet_addr(arg=nil)
-        set_or_return(
-          :inet_addr,
-          arg,
-          :kind_of => String
-        )
-      end
-
-      def bcast(arg=nil)
-        set_or_return(
-          :bcast,
-          arg,
-          :kind_of => String
-        )
-      end
-
-      def mask(arg=nil)
-        set_or_return(
-          :mask,
-          arg,
-          :kind_of => String
-        )
-      end
-
-      def mtu(arg=nil)
-        set_or_return(
-          :mtu,
-          arg,
-          :kind_of => String
-        )
-      end
-
-      def metric(arg=nil)
-        set_or_return(
-          :metric,
-          arg,
-          :kind_of => String
-        )
-      end
-
-      def onboot(arg=nil)
-        set_or_return(
-          :onboot,
-          arg,
-          :kind_of => String
-        )
-      end
-
-      def network(arg=nil)
-        set_or_return(
-          :network,
-          arg,
-          :kind_of => String
-        )
-      end
-
-      def bootproto(arg=nil)
-        set_or_return(
-          :bootproto,
-          arg,
-          :kind_of => String
-        )
-      end
-
-      def onparent(arg=nil)
-        set_or_return(
-          :onparent,
-          arg,
-          :kind_of => String
-        )
-      end
+      identity_attr :device
+      state_attrs :inet_addr, :mask
+      property :target, String, name_property: true
+      property :device, String
+      property :hwaddr, String
+      property :inet_addr, String
+      property :bcast, String
+      property :mask, String
+      property :mtu, String
+      property :metric, String
+      property :onboot, String
+      property :network, String
+      property :bootproto, String
+      property :onparent, String
     end
-
   end
 end

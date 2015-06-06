@@ -28,16 +28,6 @@ class Chef
     class RemoteFile < Chef::Resource::File
       include Chef::Mixin::Securable
 
-      def initialize(name, run_context=nil)
-        super
-        @source = []
-        @use_etag = true
-        @use_last_modified = true
-        @ftp_active_mode = false
-        @headers = {}
-        @provider = Chef::Provider::RemoteFile
-      end
-
       # source can take any of the following as arguments
       # - A single string argument
       # - Multiple string arguments
@@ -46,38 +36,22 @@ class Chef
       #   or array of strings
       # All strings must be parsable as URIs.
       # source returns an array of strings.
-      def source(*args)
-        arg = parse_source_args(args)
-        ret = set_or_return(:source,
-                            arg,
-                            { :callbacks => {
-                                :validate_source => method(:validate_source)
-                              }})
-        if ret.is_a? String
-          Array(ret)
-        else
-          ret
-        end
-      end
+      property :source, Array, callbacks: { validate_source: proc { validate_source } },
+                               default: lazy { [] },
+                               coerce: proc { |*args| parse_source_args(args) }
+
+      property :checksum, String
+      property :use_etag, [ true, false ], default: true
+      alias :use_etags :use_etag
+      property :use_last_modified, [ true, false ], default: true
+      property :ftp_active_mode, [ true, false ], default: false
+      property :headers, Hash, default: lazy { {} }
 
       def parse_source_args(args)
-        if args.empty?
-          nil
-        elsif args[0].is_a?(Chef::DelayedEvaluator) && args.count == 1
-          args[0]
-        elsif args.any? {|a| a.is_a?(Chef::DelayedEvaluator)} && args.count > 1
+        args = Array(args).flatten
+        if args.any? {|a| a.is_a?(Chef::DelayedEvaluator)}
           raise Exceptions::InvalidRemoteFileURI, "Only 1 source argument allowed when using a lazy evaluator"
-        else
-          Array(args).flatten
         end
-      end
-
-      def checksum(args=nil)
-        set_or_return(
-          :checksum,
-          args,
-          :kind_of => String
-        )
       end
 
       # Disable or enable ETag and Last Modified conditional GET. Equivalent to
@@ -86,40 +60,6 @@ class Chef
       def use_conditional_get(true_or_false)
         use_etag(true_or_false)
         use_last_modified(true_or_false)
-      end
-
-      def use_etag(args=nil)
-        set_or_return(
-          :use_etag,
-          args,
-          :kind_of => [ TrueClass, FalseClass ]
-        )
-      end
-
-      alias :use_etags :use_etag
-
-      def use_last_modified(args=nil)
-        set_or_return(
-          :use_last_modified,
-          args,
-          :kind_of => [ TrueClass, FalseClass ]
-        )
-      end
-
-      def ftp_active_mode(args=nil)
-        set_or_return(
-          :ftp_active_mode,
-          args,
-          :kind_of => [ TrueClass, FalseClass ]
-        )
-      end
-
-      def headers(args=nil)
-        set_or_return(
-          :headers,
-          args,
-          :kind_of => Hash
-        )
       end
 
       private

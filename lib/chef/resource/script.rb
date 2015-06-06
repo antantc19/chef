@@ -24,51 +24,24 @@ class Chef
   class Resource
     class Script < Chef::Resource::Execute
       # Chef-13: go back to using :name as the identity attr
-      identity_attr :command
+      # identity_attr :name (or extend from Chef::Resource)
+      # property :command, String (no name_property)
 
-      def initialize(name, run_context=nil)
-        super
-        # Chef-13: the command variable should be initialized to nil
-        @command = name
-        @code = nil
-        @interpreter = nil
-        @flags = nil
-        @default_guard_interpreter = :default
-      end
+      property :code, String
+      property :interpreter, String, default: lazy { resource_name }
+      property :flags, String
 
-      def command(arg=nil)
-        unless arg.nil?
+      def command(arg=NOT_PASSED)
+        unless arg.nil? || arg == NOT_PASSED
           # Chef-13: change this to raise if the user is trying to set a value here
           Chef::Log.warn "Specifying command attribute on a script resource is a coding error, use the 'code' attribute, or the execute resource"
           Chef::Log.warn "This attribute is deprecated and must be fixed or this code will fail on Chef-13"
         end
         super
       end
-
-      def code(arg=nil)
-        set_or_return(
-          :code,
-          arg,
-          :kind_of => [ String ]
-        )
+      def command=(arg)
+        command(arg)
       end
-
-      def interpreter(arg=nil)
-        set_or_return(
-          :interpreter,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
-
-      def flags(arg=nil)
-        set_or_return(
-          :flags,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
-
     end
   end
 end

@@ -26,112 +26,39 @@ class Chef
 
       default_action :run
 
-      def initialize(name, run_context=nil)
-        super
-        @imports = {}
-      end
+      property :code, String, callbacks: {
+        "Only one of 'code' and 'command' properties may be specified"            => proc { |arg| !command },
+        "Only one of 'code' and 'configuration_name' properties may be specified" => proc { |arg| !configuration_name },
+      }
+      property :configuration_name, String, callbacks: {
+        "Only one of 'code' and 'configuration_name' properties may be specified" => proc { |arg| !code },
+      }
+      property :command, String, callbacks: {
+        "Only one of 'code' and 'command' properties may be specified"            => proc { |arg| !code },
+      }
+      property :configuration_data, String, callbacks: {
+        "Only one of 'configuration_data' and 'configuration_data_script' properties may be specified" => proc { |arg| !configuration_data_script },
+      }
+      property :configuration_data_script, String, callbacks: {
+        "Only one of 'configuration_data' and 'configuration_data_script' properties may be specified" => proc { |arg| !configuration_data },
+      }
 
-      def code(arg=nil)
-        if arg && command
-          raise ArgumentError, "Only one of 'code' and 'command' attributes may be specified"
-        end
-        if arg && configuration_name
-          raise ArgumentError, "The 'code' and 'command' attributes may not be used together"
-        end
-        set_or_return(
-          :code,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
-
-      def configuration_name(arg=nil)
-        if arg && code
-          raise ArgumentError, "Attribute `configuration_name` may not be set if `code` is set"
-        end
-        set_or_return(
-          :configuration_name,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
-
-      def command(arg=nil)
-        if arg && code
-          raise ArgumentError, "The 'code' and 'command' attributes may not be used together"
-        end
-        set_or_return(
-          :command,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
-
-      def configuration_data(arg=nil)
-        if arg && configuration_data_script
-          raise ArgumentError, "The 'configuration_data' and 'configuration_data_script' attributes may not be used together"
-        end
-        set_or_return(
-          :configuration_data,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
-
-      def configuration_data_script(arg=nil)
-        if arg && configuration_data
-          raise ArgumentError, "The 'configuration_data' and 'configuration_data_script' attributes may not be used together"
-        end
-        set_or_return(
-          :configuration_data_script,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
+      property :flags, Hash
+      property :cwd, String
+      property :environment, Hash
+      property :timeout, Integer
+      property :imports, Hash, lazy { {} }
 
       def imports(module_name=nil, *args)
         if module_name
-          @imports[module_name] ||= []
           if args.length == 0
-            @imports[module_name] << '*'
+            imports[module_name] << '*'
           else
-            @imports[module_name].push(*args)
+            imports[module_name].push(*args)
           end
         else
-          @imports
+          super
         end
-      end
-
-      def flags(arg=nil)
-        set_or_return(
-          :flags,
-          arg,
-          :kind_of => [ Hash ]
-        )
-      end
-
-      def cwd(arg=nil)
-        set_or_return(
-          :cwd,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
-
-      def environment(arg=nil)
-        set_or_return(
-          :environment,
-          arg,
-          :kind_of => [ Hash ]
-        )
-      end
-
-      def timeout(arg=nil)
-        set_or_return(
-          :timeout,
-          arg,
-          :kind_of => [ Integer ]
-        )
       end
     end
   end

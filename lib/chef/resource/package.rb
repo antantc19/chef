@@ -23,80 +23,20 @@ class Chef
   class Resource
     class Package < Chef::Resource
       identity_attr :package_name
-
       state_attrs :version, :options
 
       default_action :install
       allowed_actions :install, :upgrade, :remove, :purge, :reconfig
 
-      def initialize(name, run_context=nil)
-        super
-        @candidate_version = nil
-        @options = nil
-        @package_name = name
-        @response_file = nil
-        @response_file_variables = Hash.new
-        @source = nil
-        @version = nil
-        @timeout = nil
-      end
-
-      def package_name(arg=nil)
-        set_or_return(
-          :package_name,
-          arg,
-          :kind_of => [ String, Array ]
-        )
-      end
-
-      def version(arg=nil)
-        set_or_return(
-          :version,
-          arg,
-          :kind_of => [ String, Array ]
-        )
-      end
-
-      def response_file(arg=nil)
-        set_or_return(
-          :response_file,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
-
-      def response_file_variables(arg=nil)
-        set_or_return(
-          :response_file_variables,
-          arg,
-          :kind_of => [ Hash ]
-        )
-      end
-
-      def source(arg=nil)
-        set_or_return(
-          :source,
-          arg,
-          :kind_of => [ String ]
-        )
-      end
-
-      def options(arg=nil)
-        set_or_return(
-      	  :options,
-      	  arg,
-      	  :kind_of => [ String ]
-      	)
-      end
-
-      def timeout(arg=nil)
-        set_or_return(
-          :timeout,
-          arg,
-          :kind_of => [String, Integer]
-        )
-      end
-
+      identity_attr :package_name
+      state_attrs :version, :options
+      property :package_name, [ String, Array ], name_property: true
+      property :version, [ String, Array ]
+      property :response_file, String
+      property :response_file_variables, Hash, default: lazy { {} }
+      property :source, String
+      property :options, String
+      property :timeout, [ String, Integer ]
     end
   end
 end

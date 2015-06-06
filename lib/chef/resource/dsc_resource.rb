@@ -27,27 +27,9 @@ class Chef
 
       default_action :run
 
-      def initialize(name, run_context)
-        super
-        @properties = {}
-        @resource = nil
-      end
-
-      def resource(value=nil)
-        if value
-          @resource = value
-        else
-          @resource
-        end
-      end
-
-      def module_name(value=nil)
-        if value
-          @module_name = value
-        else
-          @module_name
-        end
-      end
+      property :resource
+      property :module_name
+      property :properties, default: lazy { {} }
 
       def property(property_name, value=nil)
         if not property_name.is_a?(Symbol)
@@ -55,13 +37,14 @@ class Chef
         end
 
         if value.nil?
-          value_of(@properties[property_name])
+          value_of(properties[property_name])
         else
-          @properties[property_name] = value
+          properties[property_name] = value
         end
       end
 
       def properties
+        @properties ||= {}
         @properties.reduce({}) do |memo, (k, v)|
           memo[k] = value_of(v)
           memo

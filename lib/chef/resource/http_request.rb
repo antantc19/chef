@@ -24,43 +24,13 @@ class Chef
   class Resource
     class HttpRequest < Chef::Resource
 
-      identity_attr :url
-
       default_action :get
       allowed_actions :get, :put, :post, :delete, :head, :options
 
-      def initialize(name, run_context=nil)
-        super
-        @message = name
-        @url = nil
-        @headers = {}
-      end
-
-      def url(args=nil)
-        set_or_return(
-          :url,
-          args,
-          :kind_of => String
-        )
-      end
-
-      def message(args=nil, &block)
-        args = block if block_given?
-        set_or_return(
-          :message,
-          args,
-          :kind_of => Object
-        )
-      end
-
-      def headers(args=nil)
-        set_or_return(
-          :headers,
-          args,
-          :kind_of => Hash
-        )
-      end
-
+      identity_attr :url
+      property :message, name_property: true, coerce: proc { |v=nil, &block| v || block }
+      property :url, String
+      property :headers, Hash, default: lazy { {} }
     end
   end
 end

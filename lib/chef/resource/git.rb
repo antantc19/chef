@@ -21,19 +21,7 @@ require "chef/resource/scm"
 class Chef
   class Resource
     class Git < Chef::Resource::Scm
-
-      def initialize(name, run_context=nil)
-        super
-        @additional_remotes = Hash[]
-      end
-
-      def additional_remotes(arg=nil)
-        set_or_return(
-          :additional_remotes,
-          arg,
-          :kind_of => Hash
-        )
-      end
+      property :additional_remotes, Hash, default: lazy { Hash[] }
 
       alias :branch :revision
       alias :reference :revision
