@@ -213,20 +213,7 @@ class Chef
 
     # called from DSL
     def load_recipe(recipe_name, run_context)
-      unless recipe_filenames_by_name.has_key?(recipe_name)
-        raise Chef::Exceptions::RecipeNotFound, "could not find recipe #{recipe_name} for cookbook #{name}"
-      end
-
-      Chef::Log.debug("Found recipe #{recipe_name} in cookbook #{name}")
-      recipe = Chef::Recipe.new(name, recipe_name, run_context)
-      recipe_filename = recipe_filenames_by_name[recipe_name]
-
-      unless recipe_filename
-        raise Chef::Exceptions::RecipeNotFound, "could not find #{recipe_name} files for cookbook #{name}"
-      end
-
-      recipe.from_file(recipe_filename)
-      recipe
+      run_context.load_recipe(recipe_name)
     end
 
     def segment_filenames(segment)

@@ -16,12 +16,14 @@
 # limitations under the License.
 #
 
-require 'set'
 require 'chef/log'
 require 'chef/recipe'
 require 'chef/resource/lwrp_base'
 require 'chef/provider/lwrp_base'
 require 'chef/resource_definition_list'
+require 'chef/cookbook/cookbook_processor'
+require 'forwardable'
+require 'set'
 
 class Chef
   class RunContext
@@ -29,30 +31,21 @@ class Chef
     # Implements the compile phase of the chef run by loading/eval-ing files
     # from cookbooks in the correct order and in the correct context.
     class CookbookCompiler
-      attr_reader :events
+      extend Forwardable
+      attr_reader :run_context
       attr_reader :run_list_expansion
+      def_delegators :run_context, :events, :node, :cookbook_collection, :definitions
 
-      def initialize(run_context, run_list_expansion, events)
+      def initialize(run_context, run_list_expansion, events=nil)
+        if events
+          Chef::Log.deprecation("events is no longer a separate parameter to CookbookCompiler.new and will be removed in Chef 13.")
+          if events != run_context.events
+            raise "The run context event sink is different from the one passed in to CookbookCompiler.new!"
+          end
+        end
         @run_context = run_context
-        @events = events
         @run_list_expansion = run_list_expansion
-        @cookbook_order = nil
-      end
-
-      # Chef::Node object for the current run.
-      def node
-        @run_context.node
-      end
-
-      # Chef::CookbookCollection object for the current run
-      def cookbook_collection
-        @run_context.cookbook_collection
-      end
-
-      # Resource Definitions from the compiled cookbooks. This is populated by
-      # calling #compile_resource_definitions (which is called by #compile)
-      def definitions
-        @run_context.definitions
+        @cookbook_version_compilers = {}
       end
 
       # Run the compile phase of the chef run. Loads files in the following order:
@@ -72,7 +65,7 @@ class Chef
         compile_attributes
         compile_lwrps
         compile_resource_definitions
-        compile_recipes
+        compile_run_list
       end
 
       # Extracts the cookbook names from the expanded run list, then iterates
@@ -94,60 +87,81 @@ class Chef
 
       # Loads library files from cookbooks according to #cookbook_order.
       def compile_libraries
-        @events.library_load_start(count_files_by_segment(:libraries))
+        events.library_load_start(count_files_by_segment(:libraries))
         cookbook_order.each do |cookbook|
-          load_libraries_from_cookbook(cookbook)
+          compiler_for(cookbook).compile_libraries
         end
-        @events.library_load_complete
+        events.library_load_complete
       end
 
       # Loads attributes files from cookbooks. Attributes files are loaded
       # according to #cookbook_order; within a cookbook, +default.rb+ is loaded
       # first, then the remaining attributes files in lexical sort order.
       def compile_attributes
-        @events.attribute_load_start(count_files_by_segment(:attributes))
+        events.attribute_load_start(count_files_by_segment(:attributes))
         cookbook_order.each do |cookbook|
-          load_attributes_from_cookbook(cookbook)
+          compiler_for(cookbook).compile_attributes
         end
-        @events.attribute_load_complete
+        events.attribute_load_complete
       end
 
       # Loads LWRPs according to #cookbook_order. Providers are loaded before
       # resources on a cookbook-wise basis.
       def compile_lwrps
         lwrp_file_count = count_files_by_segment(:providers) + count_files_by_segment(:resources)
-        @events.lwrp_load_start(lwrp_file_count)
+        events.lwrp_load_start(lwrp_file_count)
         cookbook_order.each do |cookbook|
-          load_lwrps_from_cookbook(cookbook)
+          compiler_for(cookbook).compile_lwrps
         end
-        @events.lwrp_load_complete
+        events.lwrp_load_complete
       end
 
       # Loads resource definitions according to #cookbook_order
       def compile_resource_definitions
-        @events.definition_load_start(count_files_by_segment(:definitions))
+        events.definition_load_start(count_files_by_segment(:definitions))
         cookbook_order.each do |cookbook|
-          load_resource_definitions_from_cookbook(cookbook)
+          compiler_for(cookbook).compile_resource_definitions
         end
-        @events.definition_load_complete
+        events.definition_load_complete
       end
 
       # Iterates over the expanded run_list, loading each recipe in turn.
-      def compile_recipes
-        @events.recipe_load_start(run_list_expansion.recipes.size)
+      def compile_run_list
+        events.recipe_load_start(run_list_expansion.recipes.size)
         run_list_expansion.recipes.each do |recipe|
+          cookbook_name, recipe_short_name = Chef::Recipe.parse_recipe_name(recipe_name)
           begin
-            @run_context.load_recipe(recipe)
+            compiler_for(cookbook_name).compile_recipe(recipe_short_name)
           rescue Chef::Exceptions::RecipeNotFound => e
-            @events.recipe_not_found(e)
+            events.recipe_not_found(e)
             raise
           rescue Exception => e
-            path = resolve_recipe(recipe)
-            @events.recipe_file_load_failed(path, e)
+            cookbook, path = resolve_recipe(recipe)
+            events.recipe_file_load_failed(cookbooks[], e)
             raise
           end
         end
-        @events.recipe_load_complete
+        events.recipe_load_complete
+      end
+
+      alias :compile_recipes :compile_run_list
+
+      def compile_recipe(recipe_name, current_cookbook: nil)
+        Chef::Log.debug("Loading Recipe #{recipe_name}")
+
+        cookbook_name, recipe_short_name = Chef::Recipe.parse_recipe_name(recipe_name, current_cookbook: current_cookbook)
+
+        if unreachable_cookbook?(cookbook_name) # CHEF-4367
+          Chef::Log.warn(<<-ERROR_MESSAGE)
+  MissingCookbookDependency:
+  Recipe `#{recipe_name}` is not in the run_list, and cookbook '#{cookbook_name}'
+  is not a dependency of any cookbook in the run_list.  To load this recipe,
+  first add a dependency on cookbook '#{cookbook_name}' in the cookbook you're
+  including it from in that cookbook's metadata.
+  ERROR_MESSAGE
+        end
+
+        compiler_for(cookbook_name).compile_recipe(recipe_short_name)
       end
 
       # Whether or not a cookbook is reachable from the set of cookbook given
@@ -162,86 +176,6 @@ class Chef
       end
 
       private
-
-      def load_attributes_from_cookbook(cookbook_name)
-        list_of_attr_files = files_in_cookbook_by_segment(cookbook_name, :attributes).dup
-        if default_file = list_of_attr_files.find {|path| File.basename(path) == "default.rb" }
-          list_of_attr_files.delete(default_file)
-          load_attribute_file(cookbook_name.to_s, default_file)
-        end
-
-        list_of_attr_files.each do |filename|
-          load_attribute_file(cookbook_name.to_s, filename)
-        end
-      end
-
-      def load_attribute_file(cookbook_name, filename)
-        Chef::Log.debug("Node #{node.name} loading cookbook #{cookbook_name}'s attribute file #{filename}")
-        attr_file_basename = ::File.basename(filename, ".rb")
-        node.include_attribute("#{cookbook_name}::#{attr_file_basename}")
-      rescue Exception => e
-        @events.attribute_file_load_failed(filename, e)
-        raise
-      end
-
-      def load_libraries_from_cookbook(cookbook_name)
-        files_in_cookbook_by_segment(cookbook_name, :libraries).each do |filename|
-          begin
-            Chef::Log.debug("Loading cookbook #{cookbook_name}'s library file: #{filename}")
-            Kernel.load(filename)
-            @events.library_file_loaded(filename)
-          rescue Exception => e
-            @events.library_file_load_failed(filename, e)
-            raise
-          end
-        end
-      end
-
-      def load_lwrps_from_cookbook(cookbook_name)
-        files_in_cookbook_by_segment(cookbook_name, :providers).each do |filename|
-          load_lwrp_provider(cookbook_name, filename)
-        end
-        files_in_cookbook_by_segment(cookbook_name, :resources).each do |filename|
-          load_lwrp_resource(cookbook_name, filename)
-        end
-      end
-
-      def load_lwrp_provider(cookbook_name, filename)
-        Chef::Log.debug("Loading cookbook #{cookbook_name}'s providers from #{filename}")
-        Chef::Provider::LWRPBase.build_from_file(cookbook_name, filename, self)
-        @events.lwrp_file_loaded(filename)
-      rescue Exception => e
-        @events.lwrp_file_load_failed(filename, e)
-        raise
-      end
-
-      def load_lwrp_resource(cookbook_name, filename)
-        Chef::Log.debug("Loading cookbook #{cookbook_name}'s resources from #{filename}")
-        Chef::Resource::LWRPBase.build_from_file(cookbook_name, filename, self)
-        @events.lwrp_file_loaded(filename)
-      rescue Exception => e
-        @events.lwrp_file_load_failed(filename, e)
-        raise
-      end
-
-
-      def load_resource_definitions_from_cookbook(cookbook_name)
-        files_in_cookbook_by_segment(cookbook_name, :definitions).each do |filename|
-          begin
-            Chef::Log.debug("Loading cookbook #{cookbook_name}'s definitions from #{filename}")
-            resourcelist = Chef::ResourceDefinitionList.new
-            resourcelist.from_file(filename)
-            definitions.merge!(resourcelist.defines) do |key, oldval, newval|
-              Chef::Log.info("Overriding duplicate definition #{key}, new definition found in #{filename}")
-              newval
-            end
-            @events.definition_file_loaded(filename)
-          rescue Exception => e
-            @events.definition_file_load_failed(filename, e)
-            raise
-          end
-        end
-      end
 
       # Builds up the list of +ordered_cookbooks+ by first recursing through the
       # dependencies of +cookbook+, and then adding +cookbook+ to the list of
@@ -280,11 +214,16 @@ class Chef
 
       # Given a +recipe_name+, finds the file associated with the recipe.
       def resolve_recipe(recipe_name)
+        Chef::Recipe.parse_recipe_name(recipe_name, current_cookbook: current_cookbook)
         cookbook_name, recipe_short_name = Chef::Recipe.parse_recipe_name(recipe_name)
         cookbook = cookbook_collection[cookbook_name]
-        cookbook.recipe_filenames_by_name[recipe_short_name]
+        [ cookbook, cookbook.recipe_filenames_by_name[recipe_short_name] ]
       end
 
+      def compiler_for(cookbook_name)
+        cookbook_version = cookbook_collection[cookbook_name]
+        @cookbook_version_compilers[cookbook_version] ||= Chef::Cookbook::CookbookProcessor.new(run_context, cookbook_version)
+      end
 
     end
 

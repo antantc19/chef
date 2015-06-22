@@ -517,6 +517,9 @@ describe Chef::Recipe do
   end
 
   describe "include_recipe" do
+    before do
+      run_context.load(Chef::RunList::RunListExpansion.new("_default", []))
+    end
     it "should evaluate another recipe with include_recipe" do
       expect(node).to receive(:loaded_recipe).with(:openldap, "gigantor")
       allow(run_context).to receive(:unreachable_cookbook?).with(:openldap).and_return(false)
@@ -545,9 +548,8 @@ describe Chef::Recipe do
     it "should not include the same recipe twice" do
       expect(node).to receive(:loaded_recipe).with(:openldap, "default").exactly(:once)
       allow(run_context).to receive(:unreachable_cookbook?).with(:openldap).and_return(false)
-      expect(cookbook_collection[:openldap]).to receive(:load_recipe).with("default", run_context)
+      expect_any_instance_of(Chef::Recipe).to receive(:from_file).with(match(/default.rb$/)).exactly(:once)
       recipe.include_recipe "openldap"
-      expect(cookbook_collection[:openldap]).not_to receive(:load_recipe).with("default", run_context)
       recipe.include_recipe "openldap"
     end
 
@@ -555,7 +557,7 @@ describe Chef::Recipe do
       openldap_recipe = Chef::Recipe.new("openldap", "test", run_context)
       expect(node).to receive(:loaded_recipe).with(:openldap, "default").exactly(:once)
       allow(run_context).to receive(:unreachable_cookbook?).with(:openldap).and_return(false)
-      expect(cookbook_collection[:openldap]).to receive(:load_recipe).with("default", run_context)
+      expect_any_instance_of(Chef::Recipe).to receive(:from_file).with(match(/default.rb$/)).exactly(:once)
       openldap_recipe.include_recipe "::default"
     end
 
@@ -563,9 +565,8 @@ describe Chef::Recipe do
       openldap_recipe = Chef::Recipe.new("openldap", "test", run_context)
       expect(node).to receive(:loaded_recipe).with(:openldap, "default").exactly(:once)
       allow(run_context).to receive(:unreachable_cookbook?).with(:openldap).and_return(false)
-      expect(cookbook_collection[:openldap]).to receive(:load_recipe).with("default", run_context)
+      expect_any_instance_of(Chef::Recipe).to receive(:from_file).with(match(/default.rb$/)).exactly(:once)
       openldap_recipe.include_recipe "::default"
-      expect(cookbook_collection[:openldap]).not_to receive(:load_recipe).with("default", run_context)
       openldap_recipe.include_recipe "openldap::default"
     end
 
@@ -573,9 +574,8 @@ describe Chef::Recipe do
       openldap_recipe = Chef::Recipe.new("openldap", "test", run_context)
       expect(node).to receive(:loaded_recipe).with(:openldap, "default").exactly(:once)
       allow(run_context).to receive(:unreachable_cookbook?).with(:openldap).and_return(false)
-      expect(cookbook_collection[:openldap]).to receive(:load_recipe).with("default", run_context)
+      expect_any_instance_of(Chef::Recipe).to receive(:from_file).with(match(/default.rb$/)).exactly(:once)
       openldap_recipe.include_recipe "openldap::default"
-      expect(cookbook_collection[:openldap]).not_to receive(:load_recipe).with("default", run_context)
       openldap_recipe.include_recipe "::default"
     end
 
@@ -583,9 +583,8 @@ describe Chef::Recipe do
       openldap_recipe = Chef::Recipe.new("openldap", "test", run_context)
       expect(node).to receive(:loaded_recipe).with(:openldap, "default").exactly(:once)
       allow(run_context).to receive(:unreachable_cookbook?).with(:openldap).and_return(false)
-      expect(cookbook_collection[:openldap]).to receive(:load_recipe).with("default", run_context)
+      expect_any_instance_of(Chef::Recipe).to receive(:from_file).with(match(/default.rb$/)).exactly(:once)
       openldap_recipe.include_recipe "::default"
-      expect(cookbook_collection[:openldap]).not_to receive(:load_recipe).with("default", run_context)
       openldap_recipe.openldap_includer("do it").run_action(:run)
     end
 
@@ -593,9 +592,8 @@ describe Chef::Recipe do
       openldap_recipe = Chef::Recipe.new("openldap", "test", run_context)
       expect(node).to receive(:loaded_recipe).with(:openldap, "default").exactly(:once)
       allow(run_context).to receive(:unreachable_cookbook?).with(:openldap).and_return(false)
-      expect(cookbook_collection[:openldap]).to receive(:load_recipe).with("default", run_context)
+      expect_any_instance_of(Chef::Recipe).to receive(:from_file).with(match(/default.rb$/)).exactly(:once)
       openldap_recipe.openldap_includer("do it").run_action(:run)
-      expect(cookbook_collection[:openldap]).not_to receive(:load_recipe).with("default", run_context)
       openldap_recipe.include_recipe "::default"
     end
 
@@ -603,9 +601,8 @@ describe Chef::Recipe do
       openldap_recipe = Chef::Recipe.new("openldap", "test", run_context)
       expect(node).to receive(:loaded_recipe).with(:openldap, "default").exactly(:once)
       allow(run_context).to receive(:unreachable_cookbook?).with(:openldap).and_return(false)
-      expect(cookbook_collection[:openldap]).to receive(:load_recipe).with("default", run_context)
+      expect_any_instance_of(Chef::Recipe).to receive(:from_file).with(match(/default.rb$/)).exactly(:once)
       openldap_recipe.openldap_includer("do it").run_action(:run)
-      expect(cookbook_collection[:openldap]).not_to receive(:load_recipe).with("default", run_context)
       openldap_recipe.openldap_includer("do it").run_action(:run)
     end
   end

@@ -48,7 +48,7 @@ describe Chef::RunContext::CookbookCompiler do
   let(:run_list_expansion) { node.run_list.expand('_default') }
 
   let(:compiler) do
-    Chef::RunContext::CookbookCompiler.new(run_context, run_list_expansion, events)
+    Chef::RunContext::CookbookCompiler.new(run_context, run_list_expansion)
   end
 
 

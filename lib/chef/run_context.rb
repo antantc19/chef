@@ -87,14 +87,14 @@ class Chef
 
       @node.run_context = self
       @node.set_cookbook_attribute
-      @cookbook_compiler = nil
     end
 
     # Triggers the compile phase of the chef run. Implemented by
     # Chef::RunContext::CookbookCompiler
     def load(run_list_expansion)
-      @cookbook_compiler = CookbookCompiler.new(self, run_list_expansion, events)
-      @cookbook_compiler.compile
+      raise "Cannot call load() twice" if cookbook_compiler
+      self.cookbook_compiler = CookbookCompiler.new(self, run_list_expansion)
+      cookbook_compiler.compile
     end
 
     # Adds an immediate notification to the
@@ -149,30 +149,7 @@ class Chef
 
     # Evaluates the recipe +recipe_name+. Used by DSL::IncludeRecipe
     def load_recipe(recipe_name, current_cookbook: nil)
-      Chef::Log.debug("Loading Recipe #{recipe_name} via include_recipe")
-
-      cookbook_name, recipe_short_name = Chef::Recipe.parse_recipe_name(recipe_name, current_cookbook: current_cookbook)
-
-      if unreachable_cookbook?(cookbook_name) # CHEF-4367
-        Chef::Log.warn(<<-ERROR_MESSAGE)
-MissingCookbookDependency:
-Recipe `#{recipe_name}` is not in the run_list, and cookbook '#{cookbook_name}'
-is not a dependency of any cookbook in the run_list.  To load this recipe,
-first add a dependency on cookbook '#{cookbook_name}' in the cookbook you're
-including it from in that cookbook's metadata.
-ERROR_MESSAGE
-      end
-
-
-      if loaded_fully_qualified_recipe?(cookbook_name, recipe_short_name)
-        Chef::Log.debug("I am not loading #{recipe_name}, because I have already seen it.")
-        false
-      else
-        loaded_recipe(cookbook_name, recipe_short_name)
-        node.loaded_recipe(cookbook_name, recipe_short_name)
-        cookbook = cookbook_collection[cookbook_name]
-        cookbook.load_recipe(recipe_short_name, self)
-      end
+      cookbook_compiler.compile_recipe(recipe_name, current_cookbook: current_cookbook)
     end
 
     def load_recipe_file(recipe_file)
@@ -255,7 +232,7 @@ ERROR_MESSAGE
     # Used to raise an error when attempting to load a recipe belonging to a
     # cookbook that is not in the dependency graph. See also: CHEF-4367
     def unreachable_cookbook?(cookbook_name)
-      @cookbook_compiler.unreachable_cookbook?(cookbook_name)
+      cookbook_compiler.unreachable_cookbook?(cookbook_name)
     end
 
     # Open a stream object that can be printed into and will dispatch to events
@@ -300,11 +277,15 @@ ERROR_MESSAGE
       @reboot_info.size > 0
     end
 
-    private
-
+    # @api private
     def loaded_recipe(cookbook, recipe)
       @loaded_recipes["#{cookbook}::#{recipe}"] = true
+      node.loaded_recipe(cookbook, recipe)
     end
+
+    private
+
+    attr_accessor :cookbook_compiler
 
   end
 end
