@@ -1,6 +1,6 @@
 #
 # Author:: Lamont Granquist (<lamont@opscode.com>)
-# Copyright:: Copyright (c) 2013 Opscode, Inc.
+# Copyright:: Copyright (c) 2013-2015 Chef Software, Inc.
 # License:: Apache License, Version 2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -75,4 +75,46 @@ describe Chef::Provider::Template::Content do
     expect(IO.read(content.tempfile.path)).to eq("slappiness is a warm gun")
   end
 
+  describe "when using location helpers" do
+    let(:new_resource) do
+      double("Chef::Resource::Template (new)",
+             :cookbook_name => 'openldap',
+             :recipe_name => 'default',
+             :source_line => CHEF_SPEC_DATA + "/cookbooks/openldap/recipes/default.rb:2:in `from_file'",
+             :source_line_file => CHEF_SPEC_DATA + "/cookbooks/openldap/recipes/default.rb",
+             :source_line_number => "2",
+             :source => 'helpers.erb',
+             :local => false,
+             :cookbook => nil,
+             :variables => {},
+             :inline_helper_blocks => {},
+             :inline_helper_modules => [],
+             :helper_modules => [])
+    end
+
+    it "creates the template with the rendered content" do
+      expect(IO.read(content.tempfile.path)).to eql <<EOF
+openldap
+default
+#{CHEF_SPEC_DATA}/cookbooks/openldap/recipes/default.rb:2:in `from_file'
+#{CHEF_SPEC_DATA}/cookbooks/openldap/recipes/default.rb
+2
+helpers.erb
+#{CHEF_SPEC_DATA}/cookbooks/openldap/templates/default/helpers.erb
+openldap
+default
+#{CHEF_SPEC_DATA}/cookbooks/openldap/recipes/default.rb:2:in `from_file'
+#{CHEF_SPEC_DATA}/cookbooks/openldap/recipes/default.rb
+2
+helpers.erb
+#{CHEF_SPEC_DATA}/cookbooks/openldap/templates/default/helpers.erb
+EOF
+    end
+
+  it "node subtrees sent into the variables argument renders correctly" do
+    allow(new_resource).to receive(:source).and_return("render_test.conf.erb")
+    run_context.node.normal[:stuff][:vm][:foo] = "foo"
+    allow(new_resource).to receive(:variables).and_return(run_context.node[:stuff])
+    expect(IO.read(content.tempfile.path)).to eq("node[:stuff][:vm][:foo] is foo")
+  end
 end
