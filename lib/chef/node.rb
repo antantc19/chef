@@ -72,7 +72,7 @@ class Chef
       @primary_runlist = Chef::RunList.new
       @override_runlist = Chef::RunList.new
 
-      @attributes = Chef::Node::Attribute.new({}, {}, {}, {})
+      @attributes = Chef::Node::Attribute.new
 
       @run_state = {}
     end
