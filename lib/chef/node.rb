@@ -3,7 +3,7 @@
 # Author:: Christopher Brown (<cb@opscode.com>)
 # Author:: Christopher Walters (<cw@opscode.com>)
 # Author:: Tim Hinderliter (<tim@opscode.com>)
-# Copyright:: Copyright (c) 2008-2011 Opscode, Inc.
+# Copyright:: Copyright (c) 2008-2015 Chef Software, Inc.
 # License:: Apache License, Version 2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -72,7 +72,7 @@ class Chef
       @primary_runlist = Chef::RunList.new
       @override_runlist = Chef::RunList.new
 
-      @attributes = Chef::Node::Attribute.new
+      @attributes = Chef::Node::Attribute.new(node: self)
 
       @run_state = {}
     end
