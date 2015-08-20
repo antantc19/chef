@@ -10,11 +10,9 @@ class Chef
       include AttributeTrait::SymbolConvert
       include AttributeTrait::MethodMissing
       include AttributeTrait::Immutable
-      #include AttributeTrait::DeepMergeCache
+      include AttributeTrait::DeepMergeCache
       include AttributeTrait::PathTracking
       include AttributeConstants
-
-      #deep_merge_cache_populator
 
       def initialize(normal: nil, default: nil, override: nil, automatic: nil, **args)
         super(**args)
@@ -29,7 +27,8 @@ class Chef
           env_override: {},
           force_override: {},
           automatic: automatic || {},
-          node: __node
+          node: __node,
+          deep_merge_cache: __deep_merge_cache
         )
       end
 
