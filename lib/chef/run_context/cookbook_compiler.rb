@@ -97,6 +97,8 @@ class Chef
         @events.library_load_start(count_files_by_segment(:libraries))
         cookbook_order.each do |cookbook|
           load_libraries_from_cookbook(cookbook)
+          GC::Tracer.custom_event_logging("after #{cookbook} libraries loaded")
+          GC.start(full_mark: true)
         end
         @events.library_load_complete
       end
@@ -108,6 +110,8 @@ class Chef
         @events.attribute_load_start(count_files_by_segment(:attributes))
         cookbook_order.each do |cookbook|
           load_attributes_from_cookbook(cookbook)
+          GC::Tracer.custom_event_logging("after #{cookbook} attributes loaded")
+          GC.start(full_mark: true)
         end
         @events.attribute_load_complete
       end
@@ -119,6 +123,8 @@ class Chef
         @events.lwrp_load_start(lwrp_file_count)
         cookbook_order.each do |cookbook|
           load_lwrps_from_cookbook(cookbook)
+          GC::Tracer.custom_event_logging("after #{cookbook} LWRPs loaded")
+          GC.start(full_mark: true)
         end
         @events.lwrp_load_complete
       end
@@ -128,6 +134,8 @@ class Chef
         @events.definition_load_start(count_files_by_segment(:definitions))
         cookbook_order.each do |cookbook|
           load_resource_definitions_from_cookbook(cookbook)
+          GC::Tracer.custom_event_logging("after #{cookbook} definitions loaded")
+          GC.start(full_mark: true)
         end
         @events.definition_load_complete
       end

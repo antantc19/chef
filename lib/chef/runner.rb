@@ -78,7 +78,11 @@ class Chef
 
       # Execute each resource.
       run_context.resource_collection.execute_each_resource do |resource|
-        Array(resource.action).each {|action| run_action(resource, action)}
+        Array(resource.action).each {|action|
+          run_action(resource, action)
+          GC::Tracer.custom_event_logging("after #{resource} #{action}")
+          GC.start(full_mark: true)
+        }
       end
 
     rescue Exception => e

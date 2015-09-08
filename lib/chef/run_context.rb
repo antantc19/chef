@@ -291,6 +291,8 @@ ERROR_MESSAGE
         node.loaded_recipe(cookbook_name, recipe_short_name)
         cookbook = cookbook_collection[cookbook_name]
         cookbook.load_recipe(recipe_short_name, self)
+        GC::Tracer.custom_event_logging("after #{recipe_name} compiled")
+        GC.start(full_mark: true)
       end
     end
 

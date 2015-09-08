@@ -1,4 +1,4 @@
-#
+##
 # Author:: Adam Jacob (<adam@opscode.com>)
 # Author:: Christopher Walters (<cw@opscode.com>)
 # Author:: Christopher Brown (<cb@opscode.com>)
@@ -232,6 +232,21 @@ class Chef
     # @return Always returns true.
     #
     def run
+
+      require 'objspace'
+
+      require 'gc_tracer'
+
+      #      ObjectSpace.trace_object_allocations_start
+
+      #      require 'ruby-prof'
+      #
+      #      RubyProf.start
+      #      report = MemoryProfiler.report(top:200) do
+
+      GC::Tracer.start_logging('/tmp/chef-gctrace.out') do
+
+
       run_error = nil
 
       runlock = RunLock.new(Chef::Config.lockfile)
@@ -248,26 +263,47 @@ class Chef
         Chef::Log.info "Chef-client pid: #{Process.pid}"
         Chef::Log.debug("Chef-client request_id: #{request_id}")
         enforce_path_sanity
+
+        GC::Tracer.custom_event_logging("before_run_ohai")
+
         run_ohai
+
+        GC::Tracer.custom_event_logging("before_register")
 
         register unless Chef::Config[:solo]
 
+        GC::Tracer.custom_event_logging("before_load_node")
+
         load_node
 
+        GC::Tracer.custom_event_logging("before_build_node")
+
         build_node
+
+        GC::Tracer.custom_event_logging("after_build_node")
 
         run_status.run_id = request_id
         run_status.start_clock
         Chef::Log.info("Starting Chef Run for #{node.name}")
         run_started
 
+        GC::Tracer.custom_event_logging("before_windows_admin_check")
+
         do_windows_admin_check
+
+        GC::Tracer.custom_event_logging("before_setup_run_context")
 
         run_context = setup_run_context
 
+        GC::Tracer.custom_event_logging("before_converge")
+
+        GC.start(full_mark: true)
         if Chef::Config[:audit_mode] != :audit_only
           converge_error = converge_and_save(run_context)
         end
+        GC.start(full_mark: true)
+
+        GC::Tracer.custom_event_logging("after_converge")
 
         if Chef::Config[:why_run] == true
           # why_run should probably be renamed to why_converge
@@ -286,6 +322,10 @@ class Chef
 
         # rebooting has to be the last thing we do, no exceptions.
         Chef::Platform::Rebooter.reboot_if_needed!(node)
+
+        GC::Tracer.custom_event_logging("before_main_loop_exit")
+
+        GC.start(full_mark: true)
       rescue Exception => run_error
         # CHEF-3336: Send the error first in case something goes wrong below and we don't know why
         Chef::Log.debug("Re-raising exception: #{run_error.class} - #{run_error.message}\n#{run_error.backtrace.join("\n  ")}")
@@ -297,12 +337,15 @@ class Chef
         end
         events.run_failed(run_error)
       ensure
-        Chef::RequestID.instance.reset_request_id
-        request_id = nil
-        @run_status = nil
-        run_context = nil
-        runlock.release
+        #Chef::RequestID.instance.reset_request_id
+        #request_id = nil
+        #@run_status = nil
+        #run_context = nil
+        #runlock.release
+        #GC.start
       end
+
+      GC::Tracer.custom_event_logging("after_main_loop_exit")
 
       # Raise audit, converge, and other errors here so that we exit
       # with the proper exit status code and everything gets raised
@@ -323,6 +366,45 @@ class Chef
         Chef::Application.debug_stacktrace(error)
         raise error
       end
+
+      GC.start(full_mark: true)
+      end
+
+      system "ps uwwp `pgrep chef-client`"
+      ObjectSpace.dump_all(output: File.open("/tmp/chef-heap.json", "w"))
+      puts "MEMSIZE OF ALL: #{ObjectSpace.memsize_of_all}"
+      pp GC.stat
+      pp ObjectSpace.count_objects_size
+      pp ObjectSpace.count_tdata_objects
+      size = {}
+      gem = {}
+      ObjectSpace.each_object(RubyVM::InstructionSequence) do |iseq|
+        memsize = ObjectSpace.memsize_of(iseq)
+        path = iseq.absolute_path
+        if path =~ %r{/opt/chef/embedded/lib/ruby/gems/2.1.0/gems/(.*?)/}
+          gem[$1] ||= 0
+          gem[$1] += memsize
+        end
+        if path =~ %r{/opt/chef/embedded/apps/(.*?)/}
+          gem[$1] ||= 0
+          gem[$1] += memsize
+        end
+
+        size[path] = memsize
+      end
+      puts "FILES:"
+      size.sort_by { |key, value| value }.reverse.each do |h|
+        puts "#{h[0]}: #{h[1]}"
+      end
+      puts "GEMS:"
+      gem.sort_by { |key, value| value }.reverse.each do |h|
+        puts "#{h[0]}: #{h[1]}"
+      end
+
+#      result = RubyProf.stop
+#      RubyProf::GraphPrinter.new(result).print(STDOUT, {})
+
+      system "ps uwwp `pgrep chef-client`"
 
       true
     end
