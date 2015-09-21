@@ -1,3 +1,9 @@
+#
+# NOTE: this runs the omnibus cookbook, but does not actually run Omnibus. Use
+# 'kichen converge' to setup the virtual machine and then `kitchen login` to
+# SSH into the machine and run Omnibus.
+#
+
 driver:
   name: vagrant
   forward_agent: yes
@@ -6,46 +12,55 @@ driver:
     memory: 4096
   synced_folders:
     - ['.', '/home/vagrant/chef']
+    - ['../omnibus', '/home/vagrant/omnibus']
+    - ['../omnibus-software', '/home/vagrant/omnibus-software']
 
 provisioner:
   name: chef_zero
-  require_chef_omnibus: 12.0.0.rc.1
+  require_chef_omnibus: true
 
 platforms:
   - name: centos-5.10
-    run_list:
+    run_list: yum-epel::default
   - name: centos-6.5
-    run_list:
+    run_list: yum-epel::default
+  - name: centos-7.0
+    run_list: yum-epel::default
   - name: debian-7.2.0
-    run_list:
+    run_list: apt::default
   - name: debian-7.4
-    run_list:
+    run_list: apt::default
   - name: debian-6.0.8
-    run_list:
+    run_list: apt::default
   - name: freebsd-9.2
     run_list:
+      - freebsd::portsnap
+      - freebsd::pkgng
   - name: freebsd-10.0
-    run_list:
+    run_list: freebsd::portsnap
   - name: ubuntu-10.04
-    run_list:
+    run_list: apt::default
   - name: ubuntu-12.04
-    run_list:
+    run_list: apt::default
   - name: ubuntu-12.10
-    run_list:
+    run_list: apt::default
   - name: ubuntu-13.04
-    run_list:
+    run_list: apt::default
   - name: ubuntu-13.10
-    run_list:
+    run_list: apt::default
   - name: ubuntu-14.04
-    run_list:
-  # The following boxes are shared via VagrantCloud. Until kitchen-vagrant
-  # is updated you'll need to add the box manually:
+    run_list: apt::default
+  # The following (private) boxes are shared via Atlas and are only
+  # available to users working for Chef. Sorry, it's about software licensing.
   #
-  #   vagrant box add chef/windows-8.1-professional
+  # Chef-internal users, you will need to:
+  # 1.  Create an Atlas account:  https://atlas.hashicorp.com/
+  # 2.  Ping the Engineering Services room with your Atlas account name
+  #     to be added to the relevant team in Atlas,
+  # 3.  Do `vagrant login` with your Atlas creds so that you can download
+  #     the private boxes.
   #
-  # Please note this may require a `vagrant login` if the box is private.
-  #
-  # The following boxes are VMware only also. You can enable VMware Fusion
+  # The Mac OS X boxes are VMware only also. You can enable VMware Fusion
   # as the default provider by copying `.kitchen.local.yml.vmware.example`
   # over to `.kitchen.local.yml`.
   #
@@ -77,6 +92,26 @@ platforms:
   #   driver:
   #     box: chef/windows-server-2008r2-standard # private
 
+attribute_defaults: &attribute_defaults
+  build_user:          vagrant
+  build_user_group:    vagrant
+  build_user_password: vagrant
+
 suites:
-  - name: chef
+  - name: angrychef
+    attributes:
+      omnibus:
+        <<: *attribute_defaults
+        install_dir: /opt/angrychef
     run_list:
+      - omnibus::default
+  - name: chef
+    provisioner:
+      chef_omnibus_install_options: -P angrychef
+      chef_omnibus_root: /opt/angrychef
+    attributes:
+      omnibus:
+        <<: *attribute_defaults
+        install_dir: /opt/chef
+    run_list:
+      - omnibus::default
