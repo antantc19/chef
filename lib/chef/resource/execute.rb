@@ -46,6 +46,8 @@ class Chef
         @returns = 0
         @timeout = nil
         @user = nil
+        @domain = nil
+        @password = nil
         @umask = nil
         @default_guard_interpreter = :execute
         @is_guard_interpreter = false
@@ -133,6 +135,30 @@ class Chef
           arg,
           :kind_of => [ String, Integer ]
         )
+      end
+
+      def domain(arg=nil)
+        set_or_return(
+          :domain,
+          arg,
+          :kind_of => [ String ]
+        )
+      end
+
+      def password(arg=nil)
+        set_or_return(
+          :password,
+          arg,
+          :kind_of => [ String ]
+        )
+      end
+
+      def sensitive(arg=nil)
+        if password
+          true
+        else
+          super
+        end
       end
 
       def self.set_guard_inherited_attributes(*inherited_attributes)
