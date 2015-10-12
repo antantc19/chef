@@ -19,6 +19,7 @@
 require 'uri'
 require 'tempfile'
 require 'chef/provider/remote_file'
+require 'chef/util/windows/logon_session'
 
 class Chef
   class Provider
@@ -35,13 +36,39 @@ class Chef
         # Fetches the file on a network share, returning a Tempfile-like File handle
         # windows only
         def fetch
-          tempfile = Chef::FileContentManagement::Tempfile.new(new_resource).tempfile
-          Chef::Log.debug("#{new_resource} staging #{@source} to #{tempfile.path}")
-          FileUtils.cp(@source, tempfile.path)
-          tempfile.close if tempfile
+          remote_user = new_resource.remote_credentials && new_resource.remote_credentials[:user]
+          remote_user_domain = remote_user ? new_resource.remote_credentials[:domain] : nil
+          remote_user_secret = remote_user ? new_resource.remote_credentials[:secret] : nil
+
+          session = nil
+
+          if remote_user
+            session = Chef::Util::Windows::LogonSession.new(remote_user, remote_user_domain, remote_user_secret)
+          end
+
+          tempfile = nil
+
+          begin
+            tempfile = Chef::FileContentManagement::Tempfile.new(new_resource).tempfile
+            Chef::Log.debug("#{new_resource} staging #{@source} to #{tempfile.path}")
+
+            if session
+              session.open
+              session.set_user_context
+            end
+
+            ::File.open(@source, 'rb') do | remote_file |
+              while data = remote_file.read(1048576)
+                tempfile.write(data)
+              end
+            end
+          ensure
+            session.close! if session
+            tempfile.close if tempfile
+          end
+
           tempfile
         end
-
       end
     end
   end

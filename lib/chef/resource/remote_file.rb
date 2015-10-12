@@ -23,6 +23,7 @@ require 'chef/provider/remote_file'
 require 'chef/mixin/securable'
 require 'chef/mixin/uris'
 
+
 class Chef
   class Resource
     class RemoteFile < Chef::Resource::File
@@ -36,6 +37,7 @@ class Chef
         @ftp_active_mode = false
         @headers = {}
         @provider = Chef::Provider::RemoteFile
+        @remote_credentials = nil
       end
 
       # source can take any of the following as arguments
@@ -122,6 +124,24 @@ class Chef
         )
       end
 
+      def remote_credentials(args=nil)
+        set_or_return(
+          :remote_credentials,
+          args,
+          { :kind_of => Hash,
+            :callbacks => {
+              :validate_credentials => method(:validate_credentials)
+            }})
+      end
+
+      def sensitive(arg=nil)
+        if remote_credentials && remote_credentials[:user]
+          true
+        else
+          super
+        end
+      end
+
       private
 
       include Chef::Mixin::Uris
@@ -136,6 +156,37 @@ class Chef
           end
         end
         true
+      end
+
+      def validate_credentials(credentials)
+        if ! Chef::Platform.windows?
+          raise Exceptions::UnsupportedPlatform,
+                "The `remote_credentials` property is only supported on the Windows platform"
+        end
+
+        if ! credentials.empty?
+          if ! credentials.has_key?(:user)
+            raise ArgumentError, "A non-empty `remote_credentials` property must specify `:user` key"
+          end
+
+          if credentials[:user].nil?
+            raise ArgumentError, "A non-empty `remote_credentials` property must specify a non-nil value for the `:user` key"
+          end
+        end
+
+        valid_keys = [:user, :domain, :secret]
+        invalid_arguments = credentials.keys - valid_keys
+
+        if ! invalid_arguments.empty?
+          invalid_argument_list = invalid_arguments.map { | key | "`:#{key}`" }.join(', ')
+          raise ArgumentError, "Only the keys `:user`, `:domain`, and `:secret` are valid keys for the `remote_credentials` [Hash]. The following invalid keys were specified: #{invalid_argument_list}"
+        end
+
+        credentials.keys.each do | key |
+          if (! credentials[key].nil?) && (! credentials[key].is_a? String)
+            raise ArgumentError, "The value of key :#{key} of the `remote_credentials` property must be of type [String], but it is of type [#{credentials[key].class}]"
+          end
+        end
       end
 
       def absolute_uri?(source)

@@ -25,9 +25,10 @@ class Chef
       class LogonSession
         include Chef::Mixin::WideString
 
-        def initialize(username, password=nil)
+        def initialize(username, domain=nil, password=nil)
           @username = username
           @password = password
+          @domain = domain
           @token = FFI::Buffer.new(:pointer)
           @session_opened = false
           @impersonating = false
@@ -40,8 +41,9 @@ class Chef
 
           username = wstring(@username)
           password = wstring(@password)
+          domain = wstring(@domain)
 
-          status = Chef::ReservedNames::Win32::API::Security.LogonUserW(username, nil, password, Chef::ReservedNames::Win32::API::Security::LOGON32_LOGON_INTERACTIVE, Chef::ReservedNames::Win32::API::Security::LOGON32_PROVIDER_DEFAULT, @token)
+          status = Chef::ReservedNames::Win32::API::Security.LogonUserW(username, domain, password, Chef::ReservedNames::Win32::API::Security::LOGON32_LOGON_NETWORK, Chef::ReservedNames::Win32::API::Security::LOGON32_PROVIDER_DEFAULT, @token)
 
           if ! status
             raise 'logon failed'
@@ -50,18 +52,22 @@ class Chef
           @session_opened = true
         end
 
+        def close!
+          if @impersonating
+            restore_user_context
+          end
+
+          Chef::ReservedNames::Win32::API::System.CloseHandle(@token.read_ulong)
+          @token = nil
+          @session_opened = false
+        end
+
         def close
           if ! @session_opened
             raise 'Session not open'
           end
 
-          if @impersonating
-            restore_user_context
-          end
-
-          Chef::ReservedNames::Win32::API.CloseHandle(@token)
-          @token = nil
-          @session_opened = false
+          close!
         end
 
         def set_user_context
