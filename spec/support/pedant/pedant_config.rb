@@ -80,7 +80,7 @@ webui_key key
 ingore_x_chef_version true
 
 # Set the platform_class
-platform_class Pedant::OpenSourcePlatform
+platform_class Pedant::Platform
 
 requestors({
   :clients => {

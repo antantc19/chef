@@ -46,7 +46,7 @@ begin
 
     shell_out("bundle install --gemfile spec/support/pedant/Gemfile", :live_stream => STDOUT)
 
-    pedant_cmd = "chef-pedant " +
+    pedant_cmd = "oc-chef-pedant " +
         " --config spec/support/pedant/pedant_config.rb" +
         " --server '#{server.url}'" +
         " --skip-knife --skip-validation --skip-authentication" +
