@@ -36,6 +36,7 @@ require 'chef/platform'
 require 'chef/resource/resource_notification'
 require 'chef/provider_resolver'
 require 'chef/resource_resolver'
+require 'chef/property/standard_types'
 require 'set'
 
 require 'chef/mixin/deprecation'
@@ -63,6 +64,9 @@ class Chef
 
     # Bring in `property` and `property_type`
     include Chef::Mixin::Properties
+
+    # Bring in standard types like Boolean and ProcProperty
+    include Chef::Property::StandardTypes
 
     #
     # The name of this particular resource.

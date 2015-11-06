@@ -7,6 +7,9 @@ class Chef
     #
     # @api private
     module Resources
+      def self.add_lazy_resource_dsl(dsl_name, requires: nil, resource_class: nil, provider_class: nil)
+
+      end
       def self.add_resource_dsl(dsl_name)
         begin
           module_eval(<<-EOM, __FILE__, __LINE__+1)
