@@ -1,4 +1,10 @@
 source "https://rubygems.org"
 
+# what chef-client was using.
 # gem 'chef-pedant', :github => 'opscode/chef-pedant', :ref => "server-cli-option"
-gem 'oc-chef-pedant', :github => 'chef/chef-server', branch: 'e9bf7fe4440afd34856401831b30636100be958b'
+
+# what chef-zero was using.
+# gem 'oc-chef-pedant', :github => 'chef/chef-server', branch: 'e9bf7fe4440afd34856401831b30636100be958b'
+
+# now everyone floats on the latest pedant release.
+gem 'oc-chef-pedant', :github => 'chef/chef-server'
