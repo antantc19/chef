@@ -48,7 +48,6 @@ begin
 
     pedant_cmd = "oc-chef-pedant " +
         " --config spec/support/pedant/pedant_config.rb" +
-        " --server '#{server.url}'" +
         " --skip-knife --skip-validation --skip-authentication" +
         " --skip-authorization --skip-omnibus"
     so = shell_out("bundle exec #{pedant_cmd}", :live_stream => STDOUT, :env => {'BUNDLE_GEMFILE' => 'spec/support/pedant/Gemfile'})

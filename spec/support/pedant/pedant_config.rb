@@ -127,3 +127,6 @@ requestors({
 
 self[:tags] = [:validation, :authentication, :authorization]
 verify_error_messages false
+
+use_default_org true
+chef_server 'http://localhost:8889'
