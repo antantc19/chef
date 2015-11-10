@@ -5,6 +5,8 @@ gemspec :name => "chef"
 gem "activesupport", "< 4.0.0", :group => :compat_testing, :platform => "ruby"
 
 gem "chef-zero", :github => "chef/chef-zero", :branch => "cd/policyfile-support"
+gem 'oc-chef-pedant', :path => '/Users/cdoherty/repos/chef-server/oc-chef-pedant'
+# gem 'oc-chef-pedant', :github => 'chef/chef-server'
 
 group(:docgen) do
   gem "tomlrb"

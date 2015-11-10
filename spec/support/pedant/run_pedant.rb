@@ -33,6 +33,8 @@ def start_server(chef_repo_path)
 end
 
 tmpdir = Dir.mktmpdir
+exit_status = 0
+
 begin
   # Create chef repository
   chef_repo_path = "#{tmpdir}/repo"
@@ -44,15 +46,17 @@ begin
   include Chef::Mixin::ShellOut
 
   Bundler.with_clean_env do
+    args = %w(--config spec/support/pedant/pedant_config.rb --skip-knife --skip-validation --skip-authentication
+              --skip-authorization --skip-omnibus)
+    require 'rspec/core'
+    require 'pedant'
+    require 'pedant/organization'
 
-    shell_out("bundle install --gemfile spec/support/pedant/Gemfile", :live_stream => STDOUT)
+    Pedant.config.suite = "api"
+    Pedant.setup(args)
+    puts Pedant::UI.new.info_banner
 
-    pedant_cmd = "oc-chef-pedant " +
-        " --config spec/support/pedant/pedant_config.rb" +
-        " --skip-knife --skip-validation --skip-authentication" +
-        " --skip-authorization --skip-omnibus"
-    so = shell_out("bundle exec #{pedant_cmd}", :live_stream => STDOUT, :env => {'BUNDLE_GEMFILE' => 'spec/support/pedant/Gemfile'})
-
+    exit_status = RSpec::Core::Runner.run(Pedant.config.rspec_args)
   end
 
 ensure
@@ -60,4 +64,4 @@ ensure
   FileUtils.remove_entry_secure(tmpdir) if tmpdir
 end
 
-exit(so.exitstatus)
+exit(exit_status)
