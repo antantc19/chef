@@ -16,6 +16,9 @@ end
 group(:development, :test) do
   gem "simplecov"
   gem 'rack', "~> 1.5.1"
+  gem 'pry'
+  gem 'pry-byebug'
+  gem 'pry-stack_explorer'
 
   gem 'ruby-shadow', :platforms => :ruby unless RUBY_PLATFORM.downcase.match(/(aix|cygwin)/)
 end
