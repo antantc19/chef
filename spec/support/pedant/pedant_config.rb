@@ -129,4 +129,5 @@ self[:tags] = [:validation, :authentication, :authorization]
 verify_error_messages false
 
 use_default_org true
+default_orgname 'chef_client_pedant_org'
 chef_server 'http://localhost:8889'
