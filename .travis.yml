@@ -31,9 +31,6 @@ matrix:
   - rvm: 2.1
   - rvm: 2.2
   - rvm: 2.2
-    gemfile: pedant.gemfile
-    script: bundle exec rake pedant
-  - rvm: 2.2
     env: "GEMFILE_MOD=\"gem 'cheffish', github: 'chef/cheffish'\""
     script: bundle exec rake cheffish_spec
   - rvm: 2.2

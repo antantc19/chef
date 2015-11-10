@@ -31,10 +31,6 @@ ChefConfig::PackageTask.new(File.expand_path('..', __FILE__), 'Chef') do |packag
   package.generate_version_class = true
 end
 
-task :pedant do
-  require File.expand_path('spec/support/pedant/run_pedant')
-end
-
 task :build_eventlog do
   Dir.chdir 'ext/win32-eventlog/' do
     system 'rake build'
