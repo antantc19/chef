@@ -128,8 +128,6 @@ class Chef
       end
 
       def user(arg=nil)
-        validate_credential(arg) if arg.is_a? Hash
-
         set_or_return(
           :user,
           arg,
@@ -154,7 +152,7 @@ class Chef
       end
 
       def sensitive(args=nil)
-        if user_contains_secret?
+        if ! password.nil?
           true
         else
           super
@@ -184,12 +182,6 @@ class Chef
         :user,
         :umask
       )
-
-      private
-
-      def user_contains_secret?
-        user.is_a? Hash
-      end
 
     end
   end

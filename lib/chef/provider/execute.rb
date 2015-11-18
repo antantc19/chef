@@ -77,10 +77,6 @@ class Chef
         !!new_resource.sensitive
       end
 
-      def has_credentials?
-        user.is_a? Hash
-      end
-
       def opts
         opts = {}
         opts[:timeout]     = timeout
