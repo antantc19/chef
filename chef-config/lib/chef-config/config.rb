@@ -446,7 +446,13 @@ module ChefConfig
     #
     # In the future, this configuration option may be replaced with an
     # automatic negotiation scheme.
-    default :authentication_protocol_version, "1.0"
+    default :authentication_protocol_version do
+      if OpenSSL::OPENSSL_FIPS
+        "1.3"
+      else
+        "1.1"
+      end
+    end
 
     # This key will be used to sign requests to the Chef server. This location
     # must be writable by Chef during initial setup when generating a client

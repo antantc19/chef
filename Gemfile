@@ -4,6 +4,7 @@ gemspec :name => "chef"
 gem "activesupport", "< 4.0.0", :group => :compat_testing, :platform => "ruby"
 
 gem 'chef-config', path: "chef-config" if File.exists?(__FILE__ + '../chef-config')
+gem 'mixlib-authentication', git: 'https://github.com/chef/mixlib-authentication', branch: 'jdm/sign-v1.3-x-ops-server-api-version'
 
 group(:docgen) do
   gem "yard"

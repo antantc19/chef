@@ -567,14 +567,6 @@ class Chef
 
       raise Chef::Exceptions::CannotDetermineNodeName unless name
 
-      # node names > 90 bytes only work with authentication protocol >= 1.1
-      # see discussion in config.rb.
-      # TODO use a computed default in Chef::Config to determine this instead of
-      # setting it.
-      if name.bytesize > 90
-        Chef::Config[:authentication_protocol_version] = "1.1"
-      end
-
       name
     end
 
