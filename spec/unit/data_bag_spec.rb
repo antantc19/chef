@@ -255,6 +255,17 @@ describe Chef::DataBag do
     describe "data bag with array path" do
       it_should_behave_like "data bag in solo mode", ["/var/chef/data_bags", "/var/chef/data_bags_2"]
     end
+
+    describe "data bag with no path" do
+      before do
+        Chef::Config[:solo] = true
+        Chef::Config[:data_bag_path] = nil
+      end
+
+      it "raises an exception" do
+        expect { Chef::DataBag.load('foo') }.to raise_error(Chef::Exceptions::InvalidDataBagPath)
+      end
+    end
   end
 
 end
