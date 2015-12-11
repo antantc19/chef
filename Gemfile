@@ -5,6 +5,9 @@ gem "activesupport", "< 4.0.0", :group => :compat_testing, :platform => "ruby"
 
 gem 'chef-config', path: "chef-config" if File.exists?(__FILE__ + '../chef-config')
 
+# XXX switch this to ~> once the policies+cookbook_artifacts stuff is released in chef-zero.
+gem 'chef-zero', github: 'chef/chef-zero', branch: 'cd/artifacts-rspec-support'
+
 group(:docgen) do
   gem "yard"
 end
