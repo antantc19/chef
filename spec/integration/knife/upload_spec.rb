@@ -1288,6 +1288,7 @@ EOM
           file 'clients/x.json', { 'public_key' => ChefZero::PUBLIC_KEY }
           file 'containers/x.json', {}
           file 'cookbooks/x/metadata.rb', cb_metadata("x", "1.0.0")
+          file 'cookbook_artifacts/x/metadata.rb', cb_metadata("x", "abcdef1234567890")
           file 'data_bags/x/y.json', {}
           file 'environments/x.json', {}
           file 'groups/x.json', {}
@@ -1307,6 +1308,7 @@ Updated /acls/groups/blah.json
 Created /clients/x.json
 Created /containers/x.json
 Created /cookbooks/x
+Created /cookbook_artifacts/x/metadata.rb
 Created /data_bags/x
 Created /data_bags/x/y.json
 Created /environments/x.json
@@ -1333,6 +1335,7 @@ EOM
             # acl_for %w(organizations foo groups blah)
             client 'x', {}
             cookbook 'x', '1.0.0'
+            cookbook_artifact 'x', 'abcdef1234567890'
             container 'x', {}
             data_bag 'x', { 'y' => {} }
             environment 'x', {}
@@ -1376,6 +1379,7 @@ EOM
             client 'x', { 'validator' => true }
             container 'x', {}
             cookbook 'x', '1.0.0', { 'recipes' => { 'default.rb' => '' } }
+            cookbook_artifact 'x', 'abcdef1234567890', { 'recipes' => { 'default.rb' => '' } }
             data_bag 'x', { 'y' => { 'a' => 'b' } }
             environment 'x', { 'description' => 'foo' }
             group 'x', { 'groups' => [ 'admin' ] }
@@ -1397,6 +1401,7 @@ EOM
 Updated /acls/groups/blah.json
 Updated /clients/x.json
 Updated /cookbooks/x
+Updated /cookbook_artifacts/x
 Updated /data_bags/x/y.json
 Updated /environments/x.json
 Updated /groups/x.json
