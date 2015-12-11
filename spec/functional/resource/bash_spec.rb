@@ -23,7 +23,7 @@ describe Chef::Resource::Bash, :unix_only do
   let(:code) { "echo hello" }
   let(:resource) {
     resource = Chef::Resource::Bash.new("foo_resource", run_context)
-    resource.code(code)
+    resource.code(code) if code
     resource
   }
 
@@ -46,7 +46,6 @@ describe Chef::Resource::Bash, :unix_only do
       it "warns when the code is not present and a useless `command` is present" do
         expect(Chef::Log).to receive(:warn).with(/coding error/)
         expect(Chef::Log).to receive(:warn).with(/deprecated/)
-        resource.code nil
         resource.command command
         expect { resource.run_action(:run) }.not_to raise_error
       end

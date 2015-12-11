@@ -62,10 +62,11 @@ class Chef
 
       def run(command, &block)
         exec = execute(command, &block)
+        # TODO we probably need to allow the user to set user and group in the block just like environment.
         exec.user(@new_resource.user) if @new_resource.user
         exec.group(@new_resource.group) if @new_resource.group
-        exec.cwd(release_path) unless exec.cwd
-        exec.environment(@new_resource.environment) unless exec.environment
+        exec.cwd(release_path) if release_path && !exec.cwd
+        exec.environment(@new_resource.environment) if @new_resource.environment && !exec.environment
         converge_by("execute #{command}") do
           exec
         end

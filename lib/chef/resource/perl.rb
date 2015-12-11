@@ -22,11 +22,8 @@ require 'chef/provider/script'
 class Chef
   class Resource
     class Perl < Chef::Resource::Script
-      def initialize(name, run_context=nil)
-        super
-        @interpreter = "perl"
-      end
-
+      resource_name :perl
+      property :interpreter, default: "perl"
     end
   end
 end

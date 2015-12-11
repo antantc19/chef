@@ -21,13 +21,11 @@ require 'chef/resource/windows_script'
 class Chef
   class Resource
     class Batch < Chef::Resource::WindowsScript
-
+      resource_name :batch
       provides :batch, os: "windows"
 
-      def initialize(name, run_context=nil)
-        super(name, run_context, nil, "cmd.exe")
-      end
-
+      property :interpreter, default: "cmd.exe"
+      property :default_guard_interpreter, default: :batch
     end
   end
 end
