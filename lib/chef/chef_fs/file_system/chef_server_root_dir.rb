@@ -21,6 +21,7 @@ require 'chef/chef_fs/file_system/acls_dir'
 require 'chef/chef_fs/file_system/base_fs_dir'
 require 'chef/chef_fs/file_system/rest_list_dir'
 require 'chef/chef_fs/file_system/cookbooks_dir'
+require 'chef/chef_fs/file_system/cookbooks_dir_unversioned'
 require 'chef/chef_fs/file_system/data_bags_dir'
 require 'chef/chef_fs/file_system/nodes_dir'
 require 'chef/chef_fs/file_system/org_entry'
@@ -140,7 +141,9 @@ class Chef
           @children ||= begin
             result = [
               # /cookbooks
-              CookbooksDir.new("cookbooks", self),
+              versioned_cookbooks ?
+                CookbooksDir.new("cookbooks", self) :
+                CookbooksDirUnversioned.new("cookbooks", self),
               # /data_bags
               DataBagsDir.new("data_bags", self, "data"),
               # /environments

@@ -28,6 +28,9 @@ require 'tmpdir'
 class Chef
   module ChefFS
     module FileSystem
+      # Represents top-level /cookbooks.
+      # Children include name and version (i.e. apache2-1.0.0).
+      # This is used for the top-level /cookbooks when Chef::Config.versioned_cookbooks is true.
       class CookbooksDir < RestListDir
 
         include Chef::Mixin::FileClass
@@ -39,15 +42,11 @@ class Chef
 
         def children
           @children ||= begin
-            if root.versioned_cookbooks
-              result = []
-              root.get_json("#{api_path}/?num_versions=all").each_pair do |cookbook_name, cookbooks|
-                cookbooks['versions'].each do |cookbook_version|
-                  result << CookbookDir.new("#{cookbook_name}-#{cookbook_version['version']}", self, :exists => true)
-                end
+            result = []
+            root.get_json("#{api_path}/?num_versions=all").each_pair do |cookbook_name, cookbooks|
+              cookbooks['versions'].each do |cookbook_version|
+                result << CookbookDir.new("#{cookbook_name}-#{cookbook_version['version']}", self, :exists => true)
               end
-            else
-              result = root.get_json(api_path).keys.map { |cookbook_name| CookbookDir.new(cookbook_name, self, :exists => true) }
             end
             result.sort_by(&:name)
           end
@@ -56,10 +55,6 @@ class Chef
         def create_child_from(other, options = {})
           @children = nil
           upload_cookbook_from(other, options)
-        end
-
-        def upload_cookbook_from(other, options = {})
-          root.versioned_cookbooks ? upload_versioned_cookbook(other, options) : upload_unversioned_cookbook(other, options)
         rescue Timeout::Error => e
           raise Chef::ChefFS::FileSystem::OperationFailedError.new(:write, self, e, "Timeout writing: #{e}")
         rescue Net::HTTPServerException => e
@@ -77,7 +72,7 @@ class Chef
         # Cookbook Version uploader also requires a lot of refactoring
         # to make this work. So instead, we make a temporary cookbook
         # symlinking back to real cookbook, and upload the proxy.
-        def upload_versioned_cookbook(other, options)
+        def upload_cookbook_from(other, options = {})
           cookbook_name = Chef::ChefFS::FileSystem::ChefRepositoryFileSystemCookbookDir.canonical_cookbook_name(other.name)
 
           Dir.mktmpdir do |temp_cookbooks_path|
@@ -97,7 +92,7 @@ class Chef
             uploader = Chef::CookbookUploader.new(cookbook_to_upload, :force => options[:force], :rest => root.chef_rest)
 
             with_actual_cookbooks_dir(temp_cookbooks_path) do
-              upload_cookbook!(uploader)
+              uploader.upload_cookbooks
             end
 
             #
@@ -113,16 +108,6 @@ class Chef
           end
         end
 
-        def upload_unversioned_cookbook(other, options)
-          cookbook_to_upload = other.chef_object
-          cookbook_to_upload.freeze_version if options[:freeze]
-          uploader = Chef::CookbookUploader.new(cookbook_to_upload, :force => options[:force], :rest => root.chef_rest)
-
-          with_actual_cookbooks_dir(other.parent.file_path) do
-            upload_cookbook!(uploader)
-          end
-        end
-
         # Work around the fact that CookbookUploader doesn't understand chef_repo_path (yet)
         def with_actual_cookbooks_dir(actual_cookbook_path)
           old_cookbook_path = Chef::Config.cookbook_path
@@ -133,18 +118,8 @@ class Chef
           Chef::Config.cookbook_path = old_cookbook_path
         end
 
-        def upload_cookbook!(uploader, options = {})
-          if uploader.respond_to?(:upload_cookbook)
-            uploader.upload_cookbook
-          else
-            uploader.upload_cookbooks
-          end
-        end
-
         def can_have_child?(name, is_dir)
-          return false if !is_dir
-          return false if root.versioned_cookbooks && name !~ Chef::ChefFS::FileSystem::CookbookDir::VALID_VERSIONED_COOKBOOK_NAME
-          return true
+          return false if is_dir && name =~ Chef::ChefFS::FileSystem::CookbookDir::VALID_VERSIONED_COOKBOOK_NAME
         end
       end
     end

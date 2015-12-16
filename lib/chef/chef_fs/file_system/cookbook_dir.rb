@@ -165,7 +165,7 @@ class Chef
         end
 
         def copy_from(other, options = {})
-          parent.upload_cookbook_from(other, options)
+          parent.create_child_from(other, options)
         end
 
         def rest
