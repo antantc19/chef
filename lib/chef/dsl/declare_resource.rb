@@ -22,6 +22,102 @@ require 'chef/exceptions'
 class Chef
   module DSL
     module DeclareResource
+      #
+      # Lookup a resource in the resource collection by name and remove it.  This
+      # does not raise Chef::Exceptions::ResourceNotFound.
+      #
+      # @param type [Symbol] The type of resource (e.g. `:file` or `:package`)
+      # @param name [String] The name of the resource (e.g. '/x/y.txt' or 'apache2')
+      # @param run_context [Chef::RunContext] the run_context of the resource collection to operate on
+      #
+      # @return [Chef::Resource] The resource
+      #
+      # @example
+      #   remove_resource(:template, '/x/y.txy')
+      #
+      def remove_resource!(type, name, run_context: self.run_context)
+        resource = edit_resource(type, name, run_context: run_context)
+        #run_context.resource_collection.delete
+        #run_context.resource_collection.resource_list.delete
+        #run_context.resource_collection.resource_set.delete
+        pp run_context.resource_collection
+        pp run_context.resource_collection.resource_set.resources_by_key  # Hash
+        pp run_context.resource_collection.resource_list.resources  # Array
+      end
+
+      #
+      # Lookup a resource in the resource collection by name and remove it.  This
+      # does not raise Chef::Exceptions::ResourceNotFound.
+      #
+      # @param type [Symbol] The type of resource (e.g. `:file` or `:package`)
+      # @param name [String] The name of the resource (e.g. '/x/y.txt' or 'apache2')
+      # @param run_context [Chef::RunContext] the run_context of the resource collection to operate on
+      #
+      # @return [Chef::Resource] The resource
+      #
+      # @example
+      #   remove_resource(:template, '/x/y.txy')
+      #
+      def remove_resource(type, name, run_context: self.run_context)
+        remove_resource!(type, name, run_context: run_context)
+      rescue Chef::Exceptions::ResourceNotFound
+        # ignore
+      end
+
+      #
+      # Lookup a resource in the resource collection by name.  If it exists,
+      # return it.  If it does not exist, create it.  This is a useful function
+      # for accumulator patterns.
+      #
+      # @param type [Symbol] The type of resource (e.g. `:file` or `:package`)
+      # @param name [String] The name of the resource (e.g. '/x/y.txt' or 'apache2')
+      # @param created_at [String] The caller of the resource.  Use `caller[0]`
+      #   to get the caller of your function.  Defaults to the caller of this
+      #   function.
+      # @param run_context [Chef::RunContext] the run_context of the resource collection to operate on
+      # @param resource_attrs_block A block that lets you set attributes of the
+      #   resource (it is instance_eval'd on the resource instance).
+      #
+      # @return [Chef::Resource] The resource
+      #
+      # @example
+      #   resource = declare_or_edit_resource(:template, '/x/y.txy') do
+      #     source "y.txy.erb"
+      #     variables {}
+      #   end
+      #   resource.variables.merge!({ home: "/home/klowns"  })
+      #
+      def declare_or_edit_resource(type, name, created_at=nil, run_context: self.run_context, &resource_attrs_block)
+        begin
+          resource = edit_resource(type, name, run_context: run_context, &resource_attrs_block)
+          return resource
+        rescue Chef::Exceptions::ResourceNotFound
+        end
+        declare_resource(type, name, created_at, run_context, &resource_attrs_block)
+      end
+
+      #
+      # Lookup a resource in the resource collection by name and return it.  This is
+      # functionally identical to "chef_rewind", plus you can pass it a different
+      # run_context if you like.  May raise Chef::Exceptions::ResourceNotFound.
+      #
+      # @param type [Symbol] The type of resource (e.g. `:file` or `:package`)
+      # @param name [String] The name of the resource (e.g. '/x/y.txt' or 'apache2')
+      # @param run_context [Chef::RunContext] the run_context of the resource collection to operate on
+      # @param resource_attrs_block A block that lets you set attributes of the
+      #   resource (it is instance_eval'd on the resource instance).
+      #
+      # @return [Chef::Resource] The resource
+      #
+      # @example
+      #   edit_resource(:template, '/x/y.txy') do
+      #     cookbook_name: cookbook_name
+      #   end
+      #
+      def edit_resource(type, name, run_context: self.run_context, &resource_attrs_block)
+        resource = run_context.resource_collection.find(type => name)
+        return resource
+      end
 
       #
       # Instantiates a resource (via #build_resource), then adds it to the
@@ -34,6 +130,7 @@ class Chef
       # @param created_at [String] The caller of the resource.  Use `caller[0]`
       #   to get the caller of your function.  Defaults to the caller of this
       #   function.
+      # @param run_context [Chef::RunContext] the run_context of the resource collection to operate on
       # @param resource_attrs_block A block that lets you set attributes of the
       #   resource (it is instance_eval'd on the resource instance).
       #
@@ -52,11 +149,9 @@ class Chef
         created_at ||= caller[0]
 
         if create_if_missing
-          begin
-            resource = run_context.resource_collection.find(type => name)
-            return resource
-          rescue Chef::Exceptions::ResourceNotFound
-          end
+          Chef::Log.deprecation "build_resource with a create_if_missing flag is deprecated, use declare_or_edit_resource instead"
+          # midly goofy since we call this only to re-call ourselves, but that's why its deprecated...
+          return declare_or_edit_resource(type, name, created_at, run_context: run_context, &resource_attrs_block)
         end
 
         resource = build_resource(type, name, created_at, &resource_attrs_block)
@@ -76,6 +171,7 @@ class Chef
       # @param created_at [String] The caller of the resource.  Use `caller[0]`
       #   to get the caller of your function.  Defaults to the caller of this
       #   function.
+      # @param run_context [Chef::RunContext] the run_context of the resource collection to operate on
       # @param resource_attrs_block A block that lets you set attributes of the
       #   resource (it is instance_eval'd on the resource instance).
       #
@@ -88,6 +184,9 @@ class Chef
       #
       def build_resource(type, name, created_at=nil, run_context: self.run_context, &resource_attrs_block)
         created_at ||= caller[0]
+
+        # this needs to be lazy in order to avoid circular dependencies since ResourceBuilder
+        # will requires the entire provider+resolver universe
         Thread.exclusive do
           require 'chef/resource_builder' unless defined?(Chef::ResourceBuilder)
         end

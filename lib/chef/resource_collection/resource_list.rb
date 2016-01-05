@@ -33,7 +33,7 @@ class Chef
       attr_reader :iterator
 
       attr_reader :resources
-      private :resources
+     # private :resources
       # Delegate direct access methods to the @resources array
       # 4 extra methods here are not included in the Enumerable's instance methods
       direct_access_methods = Enumerable.instance_methods + [ :[], :each, :each_index, :empty? ]

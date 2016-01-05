@@ -33,7 +33,7 @@ class Chef
     extend Forwardable
 
     attr_reader :resource_set, :resource_list
-    private :resource_set, :resource_list
+    #private :resource_set, :resource_list
 
     def initialize
       @resource_set = ResourceSet.new

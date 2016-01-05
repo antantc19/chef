@@ -277,6 +277,19 @@ describe Chef::Recipe do
     end
 
 
+    describe "deleting resources" do
+      before do
+        recipe.declare_resource(:zen_master, "klopp") do
+          something "bvb"
+        end
+      end
+
+      it "deletes an existing resource via remove_resource!" do
+        recipe.remove_resource(:zen_master, "klopp")
+        expect(run_context.resource_collection.count).to eql(0)
+      end
+    end
+
 
     describe "creating resources via declare_resource" do
       let(:zm_resource) do
@@ -308,6 +321,7 @@ describe Chef::Recipe do
 
       it "does not insert two resources if create_if_missing is used" do
         zm_resource
+        expect(Chef::Log).to receive(:deprecation)
         recipe.declare_resource(:zen_master, "klopp", create_if_missing: true)
         expect(run_context.resource_collection.count).to eql(1)
       end
