@@ -20,7 +20,7 @@ class Chef
 
         def [](key)
           @__next_path = __path + [ convert_key(key) ]
-          puts "accessing [#{@_next_path.join("][")}]"
+          puts "accessing [#{@__next_path.join("][")}]"
           super
         end
 
