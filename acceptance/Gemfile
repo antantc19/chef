@@ -1,10 +1,11 @@
 source 'https://rubygems.org'
 
-#  "mixlib-install", github: "chef/mixlib-install"
+gem "mixlib-install", github: "chef/mixlib-install"
 gem "chef-acceptance", github: "chef/chef-acceptance"
 gem "mixlib-shellout"
 gem "test-kitchen", github: "sersut/test-kitchen", branch: "sersut/mixlib-install-update"
-gem 'kitchen-inspec'
+gem "inspec"
+gem "kitchen-inspec"
 
 group(:development) do
   gem "kitchen-vagrant"

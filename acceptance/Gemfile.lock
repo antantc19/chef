@@ -6,6 +6,14 @@ GIT
       thor (~> 0.19)
 
 GIT
+  remote: git://github.com/chef/mixlib-install.git
+  revision: bfa436d281e0afe2020f866acf60b69bfed2a03b
+  specs:
+    mixlib-install (0.8.0.alpha.3)
+      artifactory (~> 2.3.0)
+      mixlib-versioning (~> 1.1.0)
+
+GIT
   remote: git://github.com/sersut/test-kitchen.git
   revision: fd05389ec556fdcac96b92b1aea2a9ed48802e75
   branch: sersut/mixlib-install-update
@@ -20,6 +28,7 @@ GIT
 GEM
   remote: https://rubygems.org/
   specs:
+    artifactory (2.3.2)
     builder (3.2.2)
     coderay (1.1.0)
     diff-lcs (1.2.5)
@@ -54,6 +63,7 @@ GEM
       multi_json (~> 1.10)
     method_source (0.8.2)
     mixlib-shellout (2.2.5)
+    mixlib-versioning (1.1.0)
     multi_json (1.11.2)
     net-scp (1.2.1)
       net-ssh (>= 2.6.5)
@@ -114,8 +124,10 @@ PLATFORMS
 
 DEPENDENCIES
   chef-acceptance!
+  inspec
   kitchen-inspec
   kitchen-vagrant
+  mixlib-install!
   mixlib-shellout
   test-kitchen!
   windows_chef_zero
