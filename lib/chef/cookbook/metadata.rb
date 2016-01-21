@@ -618,12 +618,11 @@ class Chef
 
       def self.validate_json(json_str)
         o = Chef::JSONCompat.from_json(json_str)
-        metadata = new()
         VERSION_CONSTRAINTS.each do |dependency_type, hash_key|
           if dependency_group = o[hash_key]
            dependency_group.each do |cb_name, constraints|
-             if metadata.respond_to?(method_name)
-               metadata.public_send(method_name, cb_name, *Array(constraints))
+             if self.respond_to?(dependency_type)
+               self.public_send(dependency_type, cb_name, *Array(constraints))
              end
            end
           end
