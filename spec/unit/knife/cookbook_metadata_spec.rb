@@ -95,7 +95,7 @@ describe Chef::Knife::CookbookMetadata do
       @knife.run
     end
 
-    it "should validate the metadata json if metadata.rb does not exist" do
+    it "should generate the metadata json if metadata.rb does not exist" do
       expect(File).to receive(:exists?).with("#{@cookbook_dir}/foobar/metadata.rb").
                                     and_return(false)
       expect(@knife).to receive(:validate_metadata_json).with(@cookbook_dir, "foobar")
@@ -139,12 +139,17 @@ describe Chef::Knife::CookbookMetadata do
   end
 
   describe "validate_metadata_json" do
-    it "should validate the metadata json" do
+    before(:each) do
+      @metadata_mock = double("metadata")
+    end
+
+    it "should generate the metadata from json" do
+      allow(Chef::Cookbook::Metadata).to receive(:new).and_return(@metadata_mock)
+      expect(@metadata_mock).to receive(:name).with("foobar")
       expect(File).to receive(:exist?).with("#{@cookbook_dir}/foobar/metadata.json").
-                                   and_return(true)
-      expect(IO).to receive(:read).with("#{@cookbook_dir}/foobar/metadata.json").
-                               and_return(@json_data)
-      expect(Chef::Cookbook::Metadata).to receive(:validate_json).with(@json_data)
+                                      and_return(true)
+      expect(IO).to receive(:read).with("#{@cookbook_dir}/foobar/metadata.json").and_return(@json_data)
+      expect(@metadata_mock).to receive(:validate_json).with(@json_data)
       @knife.validate_metadata_json(@cookbook_dir, "foobar")
     end
 
@@ -152,20 +157,22 @@ describe Chef::Knife::CookbookMetadata do
       expect(File).to receive(:exist?).with("#{@cookbook_dir}/foobar/metadata.json").
                                    and_return(false)
       expect(IO).not_to receive(:read)
-      expect(Chef::Cookbook::Metadata).not_to receive(:validate_json)
+      expect(Chef::Cookbook::Metadata).not_to receive(:from_json)
       @knife.validate_metadata_json(@cookbook_dir, "foobar")
     end
 
-    { Chef::Exceptions::ObsoleteDependencySyntax => "obsolote dependency",
+    { Chef::Exceptions::ObsoleteDependencySyntax => "obsolete dependency",
       Chef::Exceptions::InvalidVersionConstraint => "invalid version constraint",
     }.each_pair do |klass, description|
       it "should print an error and exit when an #{description} syntax exception is encountered" do
+        allow(Chef::Cookbook::Metadata).to receive(:new).and_return(@metadata_mock)
         expect(File).to receive(:exist?).with("#{@cookbook_dir}/foobar/metadata.json").
                                      and_return(true)
+        expect(@metadata_mock).to receive(:name).with("foobar")
         expect(IO).to receive(:read).with("#{@cookbook_dir}/foobar/metadata.json").
                                  and_return(@json_data)
         exception = klass.new("#{description} blah")
-        allow(Chef::Cookbook::Metadata).to receive(:validate_json).and_raise(exception)
+        allow(@metadata_mock).to receive(:validate_json).and_raise(exception)
         expect {
           @knife.validate_metadata_json(@cookbook_dir, "foobar")
         }.to raise_error(SystemExit)
