@@ -248,7 +248,15 @@ class Chef
     #   will be returned without running, validating or coercing. If it is a
     #   `get`, the non-lazy, coerced, validated value will always be returned.
     #
-    def call(resource, value=NOT_PASSED)
+    def call(resource, value=NOT_PASSED, &block)
+      # Treat property { ... } the same as property proc { ... } (a setter)
+      if block
+        if value != NOT_PASSED
+          raise "Property #{name} of \#{self} cannot be passed passed *both* a block and a value at the same time." if value != NOT_PASSED && block
+        end
+        value = block
+      end
+
       if value == NOT_PASSED
         return get(resource)
       end
@@ -479,9 +487,8 @@ class Chef
       # We prefer this form because the property name won't show up in the
       # stack trace if you use `define_method`.
       declared_in.class_eval <<-EOM, __FILE__, __LINE__+1
-        def #{name}(value=NOT_PASSED)
-          raise "Property #{name} of \#{self} cannot be passed a block! If you meant to create a resource named #{name} instead, you'll need to first rename the property." if block_given?
-          self.class.properties[#{name.inspect}].call(self, value)
+        def #{name}(value=NOT_PASSED, &block)
+          self.class.properties[#{name.inspect}].call(self, value, &block)
         end
         def #{name}=(value)
           raise "Property #{name} of \#{self} cannot be passed a block! If you meant to create a resource named #{name} instead, you'll need to first rename the property." if block_given?
