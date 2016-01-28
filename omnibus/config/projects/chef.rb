@@ -1,5 +1,5 @@
 #
-# Copyright 2012-2014 Chef Software, Inc.
+# Copyright 2012-2016 Chef Software, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ if windows?
     override :'ruby-windows-devkit', version: "4.5.2-20111229-1559"
   end
 else
-  override :ruby,           version: "2.1.6"
+  override :ruby,           version: "2.3.0"
 end
 
 ######
