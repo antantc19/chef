@@ -1,6 +1,6 @@
 GIT
   remote: git://github.com/chef/omnibus-software.git
-  revision: a9b046e05bc328dc52fa76d3d69c4bef4ecbfda0
+  revision: 134ec4274d89ea2dc4a76cc34affc30a250ff9fc
   branch: lcg/pg-gem
   specs:
     omnibus-software (4.0.0)
