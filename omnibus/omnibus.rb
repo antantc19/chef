@@ -46,7 +46,7 @@ fetcher_read_timeout 120
 
 # We limit this to 10 workers to eliminate transient timing issues in the
 # way Ruby (and other components) compiles on some more esoteric *nixes.
-workers 10
+workers 50
 
 # Load additional software
 # ------------------------------
