@@ -1562,4 +1562,36 @@ describe Chef::Node do
     end
   end
 
+  describe "uuid" do
+    let(:node_uuid_string) { "bb322253-b674-4efd-9090-2d38681cc3fb" }
+    let(:node_uuid_file_path) { "/etc/chef/node-uuid" }
+
+    before do
+      Chef::Config[:node_uuid_path] = node_uuid_file_path
+    end
+
+    context "when an UUID file does not exist" do
+      before do
+        allow(::File).to receive(:exist?).with(node_uuid_file_path).and_return(false)
+      end
+
+      it "creates a new one" do
+        allow(SecureRandom).to receive(:uuid).and_return(node_uuid_string)
+        expect(::File).to receive(:write).with(node_uuid_file_path, node_uuid_string)
+        expect(Chef::Node.uuid).to eq(node_uuid_string)
+      end
+    end
+
+    context "when an UUID file does exist" do
+      before do
+        allow(::File).to receive(:exist?).with(node_uuid_file_path).and_return(true)
+      end
+
+      it "reads value from file" do
+        expect(::File).to receive(:read).with(node_uuid_file_path).and_return(node_uuid_string)
+        expect(Chef::Node.uuid).to eq(node_uuid_string)
+      end
+    end
+  end
+
 end

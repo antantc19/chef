@@ -264,6 +264,9 @@ module ChefConfig
     # '/tmp/chef-client-running.pid'
     default(:lockfile) { PathHelper.join(file_cache_path, "chef-client-running.pid") }
 
+    # The file where the UUID for the node is stored
+    default(:node_uuid_path) { platform_specific_path("/etc/chef/node-uuid") }
+
     ## Daemonization Settings ##
     # What user should Chef run as?
     default :user, nil

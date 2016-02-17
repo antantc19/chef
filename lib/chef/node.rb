@@ -604,6 +604,31 @@ class Chef
       from_hash(Chef::ServerAPI.new(Chef::Config[:chef_server_url]).get("nodes/#{name}"))
     end
 
+    # Node UUID
+    # Read from disk, or generate & save
+    # TODO: validate that the contents of the file are valid UUIDv4. If not, regenerate
+    def self.uuid
+      if ::File.exist?(Chef::Config[:node_uuid_path])
+        # read_uuid_from_file
+        ::File.read(Chef::Config[:node_uuid_path])
+      else
+        # generate_and_save_uuid
+        uuid = SecureRandom.uuid
+        ::File.write(Chef::Config[:node_uuid_path], uuid)
+        uuid
+      end
+    end
+
+    Node.uuid
+
+    # def self.uuid
+    #   begin
+    #     read_uuid_from_file
+    #   rescue
+    #     generate_and_save_uuid
+    #   end
+    # end
+
     # Remove this node via the REST API
     def destroy
       chef_server_rest.delete("nodes/#{name}")
