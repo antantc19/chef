@@ -34,17 +34,11 @@ else
   install_dir "#{default_root}/#{name}"
 end
 
-if windows?
-  override :ruby, version: "2.0.0-p645"
-  # Leave dev-kit pinned to 4.5 because 4.7 is 20MB larger and we don't want
-  # to unnecessarily make the client any fatter.
-  if windows_arch_i386?
-    override :'ruby-windows-devkit', version: "4.5.2-20111229-1559"
-  end
-else
-  override :ruby, version: "2.1.6"
-end
-
+# See rb-readline note if you change ruby versions!
+override :ruby, version: "2.2.4"
+# Leave dev-kit pinned to 4.5 because 4.7 is 20MB larger and we don't want
+# to unnecessarily make the client any fatter.
+override :'ruby-windows-devkit', version: "4.5.2-20111229-1559" if windows? && windows_arch_i386?
 override :bundler,      version: "1.11.2"
 override :rubygems,     version: "2.5.2"
 
@@ -58,7 +52,11 @@ if windows? || rhel?
 end
 
 dependency "preparation"
-dependency "rb-readline" if windows?
+# ruby 2.2.x chef-shell (currently) segfaults if you use native readline, so use
+# rb-readline on that version. https://bugs.ruby-lang.org/issues/11869
+# If you think it's safe to disable this to get native readline support, add
+# `if windows?` to the end, since windows has no native readline support.
+dependency "rb-readline"
 dependency "nokogiri"
 dependency "pry"
 dependency "chef"
