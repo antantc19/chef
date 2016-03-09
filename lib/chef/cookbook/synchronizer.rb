@@ -291,7 +291,7 @@ class Chef
     end
 
     def server_api
-      Chef::ServerAPI.new(Chef::Config[:chef_server_url])
+      Chef::ServerAPI.client_cache
     end
 
   end
