@@ -617,9 +617,11 @@ class Chef
         Chef::ApiClient::Registration.new(node_name, config[:client_key]).run
         events.registration_completed
       end
+      Chef::ServerAPI.set_defaults(config[:chef_server_url], client_name, config[:client_key])
+
       # We now have the client key, and should use it from now on.
-      @rest = Chef::ServerAPI.new(config[:chef_server_url], client_name: client_name,
-                                                            signing_key_filename: config[:client_key])
+      @rest = Chef::ServerAPI.client_cache
+
       # force initialization of the rest_clean API object
       rest_clean(client_name, config)
       register_reporters

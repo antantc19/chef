@@ -28,9 +28,25 @@ require "chef/http/validate_content_length"
 class Chef
   class ServerAPI < Chef::HTTP
 
-    def initialize(url = Chef::Config[:chef_server_url], options = {})
-      options[:client_name] ||= Chef::Config[:node_name]
-      options[:signing_key_filename] ||= Chef::Config[:client_key]
+    class << self
+      attr_accessor :chef_server_url
+      attr_accessor :client_name
+      attr_accessor :signing_key_filename
+
+      def set_defaults(chef_server_url, client_name, signing_key_filename)
+        @chef_server_url      = chef_server_url
+        @client_name          = client_name
+        @signing_key_filename = signing_key_filename
+      end
+
+      def client_cache
+        Thread.current[:chef_server_api_client_cache] ||= new
+      end
+    end
+
+    def initialize(url = self.class.chef_server_url, options = {})
+      options[:client_name] ||= self.class.client_name
+      options[:signing_key_filename] ||= self.class.signing_key_filename
       options[:signing_key_filename] = nil if chef_zero_uri?(url)
       options[:inflate_json_class] = false
       super(url, options)
@@ -74,5 +90,3 @@ class Chef
     end
   end
 end
-
-require "chef/config"
