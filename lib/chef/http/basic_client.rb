@@ -35,6 +35,18 @@ class Chef
       attr_reader :http_client
       attr_reader :ssl_policy
 
+      class << self
+        def cache(url, opts = {})
+          @cache ||= {}
+          @cache[url.hostname] ||= {}
+          @cache[url.hostname][url.port] ||= new(url, opts)
+        end
+
+        def reset
+          @cache = nil
+        end
+      end
+
       # Instantiate a BasicClient.
       # === Arguments:
       # url:: An URI for the remote server.
