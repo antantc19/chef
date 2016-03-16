@@ -33,13 +33,13 @@ class TopCookbooks < Chef::Resource
       repository "adamedx/winbox"
     end
 
-    # Temporarily disabling windows and chocolatey to eliminate 
+    # Temporarily disabling windows to eliminate 
     # transient errors on the builders
     # cookbook_kitchen "#{command} windows" do
     # end
 
-    # cookbook_kitchen "#{command} chocolatey" do
-    #   repository "chocolatey/chocolatey-cookbook"
-    # end
+    cookbook_kitchen "#{command} chocolatey" do
+      repository "chocolatey/chocolatey-cookbook"
+    end
   end
 end
