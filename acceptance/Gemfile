@@ -1,7 +1,7 @@
 source "https://rubygems.org"
 
 gem "mixlib-install", github: "chef/mixlib-install"
-gem "chef-acceptance", github: "chef/chef-acceptance"
+gem "chef-acceptance", github: "chef/chef-acceptance", branch: "specs-pass-out-of-the-box"
 gem "test-kitchen", github: "sersut/test-kitchen", branch: "sersut/mixlib-install-update"
 gem "kitchen-ec2", github: "test-kitchen/kitchen-ec2", branch: "jk/image-search-only"
 gem "kitchen-inspec"
