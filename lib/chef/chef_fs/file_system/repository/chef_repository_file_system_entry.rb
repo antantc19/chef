@@ -54,7 +54,7 @@ class Chef
           end
 
           def can_have_child?(name, is_dir)
-            !is_dir && name[-5..-1] == ".json"
+            !is_dir && is_ruby_or_json_file?(name)
           end
 
           def write(file_contents)

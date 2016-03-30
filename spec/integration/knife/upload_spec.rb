@@ -154,6 +154,25 @@ EOM
           end
         end
 
+        context 'the role is in ruby', focus: true do
+          before do
+            file "roles/x.rb", <<EOM
+name "x"
+description "blargle"
+EOM
+          end
+
+          it 'knife upload changes the role' do
+            knife("upload /").should_succeed "Updated /roles/x.json\n"
+            knife("diff --name-status /").should_succeed ""
+          end
+
+          it 'knife upload --no-diff does not change the role' do
+            knife("upload --no-diff /").should_succeed ""
+            knife("diff --name-status /").should_succeed "M\t/roles/x.rb\n"
+          end
+        end
+
         context "when cookbook metadata has a self-dependency" do
           before do
             file "cookbooks/x/metadata.rb", "name 'x'; version '1.0.0'; depends 'x'"

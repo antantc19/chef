@@ -24,14 +24,18 @@ class Chef
           object
         end
 
+        def remove_file_extension(name, ext=".*")
+          File.basename(name, ext)
+        end
+
         #
         # Takes a name like blah.json and removes the .json from it.
         #
         def remove_dot_json(name)
-          if name.length < 5 || name[-5, 5] != ".json"
-            raise "Invalid name #{path}: must end in .json"
+          unless File.extname(name) == ".json"
+            raise "Invalid name #{name}: must end in .json"
           end
-          name[0, name.length - 5]
+          remove_file_extension(name, ".json")
         end
 
         #
@@ -109,8 +113,10 @@ class Chef
         #
         # Bring in an instance of this object from Ruby.  (Like roles/x.rb)
         #
-        def from_ruby(ruby)
-          chef_class.from_file(ruby).to_hash
+        def from_ruby(path)
+          r = chef_class.new
+          r.from_file(path)
+          r.to_hash
         end
 
         #
@@ -192,7 +198,7 @@ class Chef
         # @yield  [s] callback to handle errors
         # @yieldparam [s<string>] error message
         def verify_integrity(object, entry)
-          base_name = remove_dot_json(entry.name)
+          base_name = remove_file_extension(entry.name)
           if object["name"] != base_name
             yield("Name must be '#{base_name}' (is '#{object['name']}')")
           end

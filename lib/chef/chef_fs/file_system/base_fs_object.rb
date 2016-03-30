@@ -141,6 +141,10 @@ class Chef
           true
         end
 
+        def is_ruby_or_json_file?(fn)
+          %w{ .rb .json }.include? File.extname(fn)
+        end
+
         # Printable path, generally used to distinguish paths in one root from
         # paths in another.
         def path_for_printing

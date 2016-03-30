@@ -35,7 +35,7 @@ class Chef
           attr_reader :data_handler
 
           def can_have_child?(name, is_dir)
-            name =~ /\.json$/ && !is_dir
+            is_ruby_or_json_file?(name) && !is_dir
           end
 
           #
@@ -74,7 +74,7 @@ class Chef
             begin
               # Grab the names of the children, append json, and make child entries
               @children ||= root.get_json(api_path).keys.sort.map do |key|
-                make_child_entry("#{key}.json", true)
+                make_child_entry("#{key}", true)
               end
             rescue Timeout::Error => e
               raise Chef::ChefFS::FileSystem::OperationFailedError.new(:children, self, e, "Timeout retrieving children: #{e}")

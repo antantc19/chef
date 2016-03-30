@@ -38,10 +38,8 @@ class Chef
           end
 
           def api_child_name
-            if name.length < 5 || name[-5, 5] != ".json"
-              raise "Invalid name #{path}: must end in .json"
-            end
-            name[0, name.length - 5]
+            raise "Invalid name #{path}" unless is_ruby_or_json_file?(path)
+            File.basename(path, ".*")
           end
 
           def api_path

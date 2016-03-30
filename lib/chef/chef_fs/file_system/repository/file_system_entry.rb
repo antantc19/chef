@@ -92,11 +92,13 @@ class Chef
           end
 
           def read
-            begin
+            if File.extname(file_path) == ".rb"
+              data_handler.from_ruby(file_path).to_json
+            else
               File.open(file_path, "rb") { |f| f.read }
-            rescue Errno::ENOENT
-              raise Chef::ChefFS::FileSystem::NotFoundError.new(self, $!)
             end
+          rescue Errno::ENOENT
+            raise Chef::ChefFS::FileSystem::NotFoundError.new(self, $!)
           end
 
           def write(content)
