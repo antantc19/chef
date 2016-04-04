@@ -1,7 +1,8 @@
 source "https://rubygems.org"
 
+gem "mixlib-install", github: "chef/mixlib-install"
 gem "chef-acceptance", github: "chef/chef-acceptance"
-gem "test-kitchen", github: "test-kitchen/test-kitchen"
+gem "test-kitchen", github: "sersut/test-kitchen", branch: "sersut/mixlib-install-update"
 gem "kitchen-ec2", github: "test-kitchen/kitchen-ec2", branch: "jk/image-search-only"
 gem "kitchen-inspec"
 gem "inspec"
@@ -9,5 +10,5 @@ gem "inspec"
 # puts in a box_url for bento when a vagrant box in atlas is specified
 gem "kitchen-vagrant", github: "test-kitchen/kitchen-vagrant"
 gem "windows_chef_zero"
-gem "winrm-fs", "~> 0.4.0"
+gem "winrm-transport"
 gem "berkshelf"
