@@ -9,5 +9,5 @@ gem "inspec"
 # puts in a box_url for bento when a vagrant box in atlas is specified
 gem "kitchen-vagrant", github: "test-kitchen/kitchen-vagrant"
 gem "windows_chef_zero"
-gem "winrm-fs", github: "winrb/winrm-fs", branch: "leave_check_files"
+gem "winrm-fs"
 gem "berkshelf"
