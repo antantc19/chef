@@ -16,6 +16,7 @@ branches:
   - master
   - 10-stable
   - 11-stable
+  - jk/bundle-repro
 
 env:
   global:
