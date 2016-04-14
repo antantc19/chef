@@ -10,8 +10,7 @@ gem "chef-config", path: File.expand_path("../chef-config", __FILE__) if File.ex
 # Ensure that we can always install rake, regardless of gem groups
 gem "rake"
 gem "bundler"
-# Remove "master" bit when cheffish tests succeed in Ruby 2.2
-gem "cheffish", github: "chef/cheffish"
+gem "cheffish"
 
 group(:omnibus_package) do
   gem "appbundler"
@@ -32,14 +31,13 @@ group(:integration) do
   gem "chef-sugar"
   gem "chefspec"
   gem "halite"
-  gem "poise", github: "poise/poise" # until released poise's tests succeed against chef master
+  gem "poise", git: "https://github.com/poise/poise" # until released poise's tests succeed against chef master
   gem "knife-windows"
   gem "foodcritic"
 
   # Used by others:
-  gem "fauxhai", github: "customink/fauxhai" # until AIX changes are released
-  gem "poise-boiler", github: "poise/poise-boiler" # until new release is made with higher rake dep
-  gem "oc-chef-pedant", github: "chef/chef-server" # until new chef-zero release
+  gem "fauxhai", git: "https://github.com/customink/fauxhai" # until AIX changes are released
+  gem "poise-boiler", git: "https://github.com/poise/poise-boiler" # until new release is made with higher rake dep
 end
 
 group(:docgen) do

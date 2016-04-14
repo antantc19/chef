@@ -2,17 +2,8 @@ require "bundler"
 require "set"
 
 module GemfileUtil
-  # gemspec and gem need to use absolute paths for things in order for our Gemfile
-  # to be *included* in another. This works around some issues in bundler 1.11.2.
-  def gemspec(options = {})
-    options[:path] = File.expand_path(options[:path] || ".", Bundler.default_gemfile.dirname)
-    super
-  end
-
   #
-  # gemspec and gem need to use absolute paths for things in order for our Gemfile
-  # to be *included* in another. This works around some issues in bundler 1.11.2.
-  # Also adds `override: true`, which allows your statement to override any other
+  # Adds `override: true`, which allows your statement to override any other
   # gem statement about the same gem in the Gemfile.
   #
   def gem(name, *args)
@@ -24,7 +15,7 @@ module GemfileUtil
     if options[:path]
       # path sourced gems are assumed to be overrides.
       options[:override] = true
-      options[:path] = File.expand_path(options[:path], Bundler.default_gemfile.dirname)
+      # options[:path] = File.expand_path(options[:path], Bundler.default_gemfile.dirname)
     end
     # Handle override
     if options[:override]
@@ -72,88 +63,134 @@ module GemfileUtil
   #
   # Include all gems in the locked gemfile.
   #
-  # @param gemfile Path to the Gemfile to load
+  # @param gemfile Path to the Gemfile to load (relative to your Gemfile)
   # @param groups A list of groups to include (whitelist). If not passed (or set
   #               to nil), all gems will be selected.
+  # @param without_groups A list of groups to ignore. Gems will be excluded from
+  #                       the results if all groups they belong to are ignored.
+  #                       This matches bundler's `without` behavior.
   # @param gems A list of gems to include above and beyond the given groups.
   #             Gems in this list must be explicitly included in the Gemfile
   #             with a `gem "gem_name", ...` line or they will be silently
   #             ignored.
   #
-  def include_locked_gemfile(gemfile, groups: nil, gems: [])
-    Bundler.ui.info "Loading locks from #{gemfile} ..."
+  def include_locked_gemfile(gemfile, groups: nil, without_groups: nil, gems: [])
     gemfile = File.expand_path(gemfile, Bundler.default_gemfile.dirname)
+    gems = Set.new(gems) + GemfileUtil.select_gems(gemfile, groups: nil, without_groups: nil)
+    specs = GemfileUtil.locked_gems("#{gemfile}.lock", gems)
+    specs.each do |name, version: nil, **options|
+      options = options.merge(override: true)
+      Bundler.ui.debug("Adding gem #{name}, #{version}, #{options} from #{gemfile}")
+      gem name, version, options
+    end
+  rescue
+    puts "ERROR: #{$!}"
+    puts $!.backtrace
+    raise
+  end
 
-    #
-    # Read the gemfile and inject its locks as first-class dependencies
-    #
-    old_gemfile = ENV["BUNDLE_GEMFILE"]
-    old_frozen = Bundler.settings[:frozen]
-    begin
-      # Set frozen to true so we don't try to install stuff.
-      Bundler.settings[:frozen] = true
+  #
+  # Select the desired gems, sans dependencies, from the gemfile.
+  #
+  # @param gemfile Path to the Gemfile to load
+  # @param groups A list of groups to include (whitelist). If not passed (or set
+  #               to nil), all gems will be selected.
+  # @param without_groups A list of groups to ignore. Gems will be excluded from
+  #                       the results if all groups they belong to are ignored.
+  #                       This matches bundler's `without` behavior.
+  #
+  # @return An array of strings with the names of the given gems.
+  #
+  def self.select_gems(gemfile, groups: nil, without_groups: nil)
+    Bundler.with_clean_env do
       # Set BUNDLE_GEMFILE to the new gemfile temporarily so all bundler's things work
       # This works around some issues in bundler 1.11.2.
       ENV["BUNDLE_GEMFILE"] = gemfile
-      bundle = Bundler::Definition.build(gemfile, "#{gemfile}.lock", nil)
-      # Narrow it down to just the dependencies in the desired groups
-      dependencies = bundle.dependencies.select do |dep|
-        groups.nil? || (dep.groups & groups).any? || gems.include?(dep.name)
+
+      parsed_gemfile = Bundler::Dsl.new
+      parsed_gemfile.eval_gemfile(gemfile)
+      deps = parsed_gemfile.dependencies.select do |dep|
+        dep_groups = dep.groups
+        dep_groups = dep_groups & groups if groups
+        dep_groups = dep_groups - without_groups if without_groups
+        dep_groups.any?
       end
-      # Get the resolved specs descended from our dependencies, from the lockfile
-      # This is sacrilege: figure out a way we can grab the list of dependencies *without*
-      # requiring everything to be installed or calling private methods ...
-      specs = bundle.resolve.for(bundle.send(:expand_dependencies, dependencies))
-
-      # Go through and create the actual gemfile from the given locks and
-      # groups.
-      specs.sort_by { |spec| spec.name }.each do |spec|
-        # bundler can't be installed by bundler so don't pin it.
-        next if spec.name == "bundler"
-
-        # Copy groups and platforms from included Gemfile
-        gem_metadata = {}
-        dep = bundle.dependencies.find { |d| d.name == spec.name }
-        if dep
-          gem_metadata[:groups] = dep.groups unless dep.groups == [:default]
-          gem_metadata[:platforms] = dep.platforms unless dep.platforms.empty?
-        end
-        gem_metadata[:override] = true
-
-        # Copy source information from included Gemfile
-        use_version = false
-        case spec.source
-        when Bundler::Source::Rubygems
-          gem_metadata[:source] = spec.source.remotes.first.to_s
-          use_version = true
-        when Bundler::Source::Git
-          gem_metadata[:git] = spec.source.uri.to_s
-          gem_metadata[:ref] = spec.source.revision
-        when Bundler::Source::Path
-          gem_metadata[:path] = spec.source.path.to_s
-        else
-          raise "Unknown source #{spec.source} for gem #{spec.name}"
-        end
-
-        # Emit the dep
-        if use_version
-          Bundler.ui.debug("Adding #{spec.name}, #{spec.version}, #{gem_metadata} from #{gemfile}")
-          gem spec.name, spec.version, gem_metadata
-        else
-          Bundler.ui.debug("Adding #{spec.name}, #{gem_metadata} from #{gemfile}")
-          gem spec.name, gem_metadata
-        end
-      end
-
-      Bundler.ui.info "Loaded #{bundle.resolve.count} locked gem versions #{groups ? "from groups #{groups.join(", ")}" : ""}#{gems.empty? ? "" : " (including #{gems.join(", ")})"} from #{gemfile}"
-    rescue Exception
-      # Bundler does a bad job of rescuing.
-      Bundler.ui.info $!
-      Bundler.ui.info $!.backtrace
-      raise
-    ensure
-      Bundler.settings[:frozen] = old_frozen
-      ENV["BUNDLE_GEMFILE"] = old_gemfile
+      deps.map { |dep| dep.name }
     end
   end
+
+  #
+  # Get all gems in the locked gemfile that start from the given gem set.
+  #
+  # @param lockfile Path to the Gemfile to load
+  # @param groups A list of groups to include (whitelist). If not passed (or set
+  #               to nil), all gems will be selected.
+  # @param without_groups A list of groups to ignore. Gems will be excluded from
+  #                       the results if all groups they belong to are ignored.
+  #                       This matches bundler's `without` behavior.
+  # @param gems A list of gems to include above and beyond the given groups.
+  #             Gems in this list must be explicitly included in the Gemfile
+  #             with a `gem "gem_name", ...` line or they will be silently
+  #             ignored.
+  # @param include_development_deps Whether to include development dependencies
+  #                                 or runtime only.
+  #
+  # @return Hash[String, Hash] A hash from gem_name ->  { version: <version>, source: <source>, git: <git>, path: <path>, ref: <ref> }
+  #
+  def self.locked_gems(lockfile, gems, include_development_deps: false)
+    # Grab all the specs from the lockfile
+    parsed_lockfile = Bundler::LockfileParser.new(IO.read(lockfile))
+    specs = {}
+    parsed_lockfile.specs.each { |s| specs[s.name] = s }
+
+    # Select the desired gems, as well as their dependencies
+    to_process = Array(gems)
+    results = {}
+    while to_process.any?
+      gem_name = to_process.pop
+      next if gem_name == "bundler" # can't be bundled. Messes things up. Stop it.
+      # Only process each gem once
+      unless results.has_key?(gem_name)
+        spec = specs[gem_name]
+        unless spec
+          raise "Gem #{gem_name.inspect} was requested but was not in #{lockfile}! Gems in lockfile: #{specs.keys}"
+        end
+        results[gem_name] = gem_metadata(spec, lockfile)
+        spec.dependencies.each do |dep|
+          if dep.type == :runtime || include_development_deps
+            to_process << dep.name
+          end
+        end
+      end
+    end
+
+    results
+  end
+
+  private
+
+  #
+  # Get metadata for the given Bundler spec (coming from a lockfile).
+  #
+  # @return Hash { version: <version>, git: <git>, path: <path>, source: <source>, ref: <ref> }
+  #
+  def self.gem_metadata(spec, lockfile)
+    # Copy source information from included Gemfile
+    result = {}
+    case spec.source
+    when Bundler::Source::Rubygems
+      result[:source] = spec.source.remotes.first.to_s
+      result[:version] = spec.version.to_s
+    when Bundler::Source::Git
+      result[:git] = spec.source.uri.to_s
+      result[:ref] = spec.source.revision
+    when Bundler::Source::Path
+      # Path is relative to the lockfile (if it's relative at all)
+      result[:path] = File.expand_path(spec.source.path.to_s, File.dirname(lockfile))
+    else
+      raise "Unknown source #{spec.source} for gem #{spec.name}"
+    end
+    result
+  end
+
 end

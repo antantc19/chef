@@ -62,7 +62,6 @@ matrix:
     rvm: 2.2
   - env:
       - TEST_GEM: chef-zero
-      - TEST_WITH_GEMS: oc-chef-pedant
     script: tasks/bin/run_external_test $TEST_GEM "rake spec" "rake cheffs"
     rvm: 2.2
   - env:

@@ -16,6 +16,7 @@ skip_tags: true
 branches:
   only:
     - master
+    - jk/bundle-repro
 
 install:
   - systeminfo

@@ -1,39 +1,29 @@
 GIT
-  remote: git://github.com/chef/chef-server.git
-  revision: 88a33630aaeae21a63b4a8111fd0a196438520c0
-  ref: 88a33630aaeae21a63b4a8111fd0a196438520c0
+  remote: https://github.com/chef/chefstyle.git
+  revision: cc37808b7849fdcf49f04011626143940f83fe92
+  ref: cc37808b7849fdcf49f04011626143940f83fe92
   specs:
-    oc-chef-pedant (2.2.0)
-      activesupport (~> 3.2)
-      erubis (~> 2.7)
-      mixlib-authentication (~> 1.3)
-      mixlib-config (~> 2.0)
-      mixlib-shellout (>= 1.1)
-      net-http-spy (~> 0.2)
-      rest-client (>= 1.6)
-      rspec (~> 3.2)
-      rspec-rerun (~> 1.0)
-      rspec_junit_formatter (~> 0.2)
+    chefstyle (0.3.1)
+      rubocop (= 0.39.0)
 
 GIT
-  remote: git://github.com/chef/cheffish.git
-  revision: 614d15ddc31b759319696aeab0f4ef50a101ebc2
-  ref: 614d15ddc31b759319696aeab0f4ef50a101ebc2
+  remote: https://github.com/customink/fauxhai
+  revision: 079c591fabd78ef13e284a84fe808fc48bf1930f
+  ref: 079c591fabd78ef13e284a84fe808fc48bf1930f
   specs:
-    cheffish (2.0.3)
-      chef-zero (~> 4.3)
-      compat_resource
-
-GIT
-  remote: git://github.com/customink/fauxhai.git
-  revision: a616c6aa9e2e7e6d9825a579a00b8d6e15484205
-  ref: a616c6aa9e2e7e6d9825a579a00b8d6e15484205
-  specs:
-    fauxhai (3.2.0)
+    fauxhai (3.3.0)
       net-ssh
 
 GIT
-  remote: git://github.com/poise/poise-boiler.git
+  remote: https://github.com/poise/poise
+  revision: a76980685a92283c08f5b2e4526ae1f08f87de79
+  ref: a76980685a92283c08f5b2e4526ae1f08f87de79
+  specs:
+    poise (2.6.2.pre)
+      halite (~> 1.0)
+
+GIT
+  remote: https://github.com/poise/poise-boiler
   revision: 0714455eba947bde2a9d49b72db1bc3ad1034ee4
   ref: 0714455eba947bde2a9d49b72db1bc3ad1034ee4
   specs:
@@ -62,22 +52,6 @@ GIT
       vagrant-wrapper
       yard (~> 0.8)
       yard-classmethods (~> 1.0)
-
-GIT
-  remote: git://github.com/poise/poise.git
-  revision: a76980685a92283c08f5b2e4526ae1f08f87de79
-  ref: a76980685a92283c08f5b2e4526ae1f08f87de79
-  specs:
-    poise (2.6.2.pre)
-      halite (~> 1.0)
-
-GIT
-  remote: https://github.com/chef/chefstyle.git
-  revision: cc37808b7849fdcf49f04011626143940f83fe92
-  ref: cc37808b7849fdcf49f04011626143940f83fe92
-  specs:
-    chefstyle (0.3.1)
-      rubocop (= 0.39.0)
 
 GIT
   remote: https://github.com/rubysec/bundler-audit.git
@@ -140,9 +114,6 @@ PATH
 GEM
   remote: https://rubygems.org/
   specs:
-    activesupport (3.2.22.2)
-      i18n (~> 0.6, >= 0.6.4)
-      multi_json (~> 1.0)
     addressable (2.4.0)
     appbundler (0.9.0)
       mixlib-cli (~> 1.4)
@@ -181,12 +152,15 @@ GEM
       ubuntu_ami (~> 0.4, >= 0.4.1)
     chef-rewind (0.0.9)
     chef-sugar (3.3.0)
-    chef-zero (4.5.0)
+    chef-zero (4.6.1)
       ffi-yajl (~> 2.2)
       hashie (>= 2.0, < 4.0)
       mixlib-log (~> 1.3)
       rack
       uuidtools (~> 2.1)
+    cheffish (2.0.4)
+      chef-zero (~> 4.3)
+      compat_resource
     chefspec (4.6.1)
       chef (>= 11.14)
       fauxhai (~> 3.2)
@@ -209,8 +183,6 @@ GEM
       thread_safe (~> 0.3, >= 0.3.1)
     diff-lcs (1.2.5)
     docile (1.1.5)
-    domain_name (0.5.20160310)
-      unf (>= 0.0.5, < 1.0.0)
     erubis (2.7.0)
     ethon (0.8.1)
       ffi (>= 1.3.0)
@@ -268,8 +240,6 @@ GEM
       thor
     hashie (3.4.3)
     highline (1.7.8)
-    http-cookie (1.0.2)
-      domain_name (~> 0.5)
     httpclient (2.7.1)
     i18n (0.7.0)
     inifile (3.0.0)
@@ -298,7 +268,9 @@ GEM
       multi_json (~> 1.10)
     logify (0.2.0)
     method_source (0.8.2)
-    mime-types (2.99.1)
+    mime-types (3.0)
+      mime-types-data (~> 3.2015)
+    mime-types-data (3.2016.0221)
     mini_portile2 (2.0.0)
     mixlib-authentication (1.4.0)
       mixlib-log
@@ -321,7 +293,6 @@ GEM
     multipart-post (2.0.0)
     net-http-persistent (2.9.4)
     net-http-pipeline (1.0.1)
-    net-http-spy (0.2.1)
     net-scp (1.2.1)
       net-ssh (>= 2.6.5)
     net-sftp (2.1.2)
@@ -388,11 +359,6 @@ GEM
     rainbow (2.1.0)
     rake (11.1.2)
     rb-readline (0.5.3)
-    rest-client (1.8.0-x86-mingw32)
-      ffi (~> 1.9)
-      http-cookie (>= 1.0.2, < 2.0)
-      mime-types (>= 1.16, < 3.0)
-      netrc (~> 0.7)
     retryable (2.0.3)
     rspec (3.4.0)
       rspec-core (~> 3.4.0)
@@ -409,8 +375,6 @@ GEM
     rspec-mocks (3.4.1)
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.4.0)
-    rspec-rerun (1.1.0)
-      rspec (~> 3.0)
     rspec-support (3.4.1)
     rspec_junit_formatter (0.2.3)
       builder (< 4)
@@ -476,9 +440,6 @@ GEM
     typhoeus (0.8.0)
       ethon (>= 0.8.0)
     ubuntu_ami (0.4.1)
-    unf (0.1.4)
-      unf_ext
-    unf_ext (0.0.7.2-x86-mingw32)
     unicode-display_width (1.0.3)
     url (0.3.2)
     uuidtools (2.1.5)
@@ -542,8 +503,8 @@ DEPENDENCIES
   chef-provisioning-aws (= 1.9.0)!
   chef-rewind (= 0.0.9)!
   chef-sugar (= 3.3.0)!
-  chef-zero (= 4.5.0)!
-  cheffish!
+  chef-zero (= 4.6.1)!
+  cheffish (= 2.0.4)!
   chefspec (= 4.6.1)!
   chefstyle!
   childprocess (= 0.5.9)!
@@ -557,7 +518,6 @@ DEPENDENCIES
   descendants_tracker (= 0.0.4)!
   diff-lcs (= 1.2.5)!
   docile (= 1.1.5)!
-  domain_name (= 0.5.20160310)!
   erubis (= 2.7.0)!
   ethon (= 0.8.1)!
   faraday (= 0.9.2)!
@@ -578,7 +538,6 @@ DEPENDENCIES
   halite (= 1.2.1)!
   hashie (= 3.4.3)!
   highline (= 1.7.8)!
-  http-cookie (= 1.0.2)!
   httpclient (= 2.7.1)!
   i18n (= 0.7.0)!
   inifile (= 3.0.0)!
@@ -598,7 +557,8 @@ DEPENDENCIES
   logging (= 2.1.0)!
   logify (= 0.2.0)!
   method_source (= 0.8.2)!
-  mime-types (= 2.99.1)!
+  mime-types (= 3.0)!
+  mime-types-data (= 3.2016.0221)!
   mini_portile2 (= 2.0.0)!
   mixlib-authentication (= 1.4.0)!
   mixlib-cli (= 1.5.0)!
@@ -612,7 +572,6 @@ DEPENDENCIES
   multipart-post (= 2.0.0)!
   net-http-persistent (= 2.9.4)!
   net-http-pipeline (= 1.0.1)!
-  net-http-spy (= 0.2.1)!
   net-scp (= 1.2.1)!
   net-sftp (= 2.1.2)!
   net-ssh (= 3.1.1)!
@@ -623,7 +582,6 @@ DEPENDENCIES
   nokogiri (= 1.6.7.2)!
   nori (= 2.6.0)!
   oauth2 (= 1.1.0)!
-  oc-chef-pedant!
   octokit (= 4.3.0)!
   ohai (= 8.14.0)!
   overcommit (= 0.33.0)!
@@ -644,14 +602,12 @@ DEPENDENCIES
   rainbow (= 2.1.0)!
   rake (= 11.1.2)!
   rb-readline (= 0.5.3)!
-  rest-client (= 1.8.0)!
   retryable (= 2.0.3)!
   rspec (= 3.4.0)!
   rspec-core (= 3.4.4)!
   rspec-expectations (= 3.4.0)!
   rspec-its (= 1.2.0)!
   rspec-mocks (= 3.4.1)!
-  rspec-rerun (= 1.1.0)!
   rspec-support (= 3.4.1)!
   rspec_junit_formatter (= 0.2.3)!
   rubocop (= 0.39.0)!
@@ -679,8 +635,6 @@ DEPENDENCIES
   treetop (= 1.6.5)!
   typhoeus (= 0.8.0)!
   ubuntu_ami (= 0.4.1)!
-  unf (= 0.1.4)!
-  unf_ext (= 0.0.7.2)!
   unicode-display_width (= 1.0.3)!
   url (= 0.3.2)!
   uuidtools (= 2.1.5)!
