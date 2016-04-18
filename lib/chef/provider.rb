@@ -345,8 +345,9 @@ class Chef
     class << self
       attr_accessor :resource_cloning
 
-      def resource_cloning(val)
-        @resource_cloning = val
+      def resource_cloning(val = nil)
+        @resource_cloning = val unless val.nil?
+        @resource_cloning
       end
     end
 
