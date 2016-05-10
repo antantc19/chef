@@ -6,7 +6,7 @@ DEPENDENCIES
 GRAPH
   apache2 (3.2.2)
   apt (3.0.0)
-  aws (3.3.2)
+  aws (3.3.3)
     ohai (>= 2.1.0)
   build-essential (3.2.0)
     seven_zip (>= 0.0.0)

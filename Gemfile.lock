@@ -113,7 +113,7 @@ GEM
       debug_inspector (>= 0.0.1)
     builder (3.2.2)
     byebug (8.2.5)
-    chef-api (0.5.0)
+    chef-api (0.6.0)
       logify (~> 0.1)
       mime-types
     chef-provisioning (1.7.0)
