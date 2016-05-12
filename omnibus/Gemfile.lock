@@ -1,6 +1,7 @@
 GIT
   remote: https://github.com/chef/omnibus-software.git
-  revision: 7e566482a86aca8b94e77285242b6a526fe77ffe
+  revision: 920d1e8d4627e02e8041883375a678841801f9b6
+  branch: chef-gem/rb-readline
   specs:
     omnibus-software (4.0.0)
       omnibus (>= 5.2.0)
