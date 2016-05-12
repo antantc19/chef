@@ -23,6 +23,12 @@ if version != "local_source"
   source git: "git://github.com/chef/chef.git"
 end
 
+if windows?
+  dependency "git-windows"
+else
+  dependency "git"
+end
+
 # For nokogiri
 dependency "libxml2"
 dependency "libxslt"
