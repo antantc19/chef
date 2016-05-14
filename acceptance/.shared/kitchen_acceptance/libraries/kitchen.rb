@@ -33,7 +33,7 @@ module KitchenAcceptance
     property :kitchen_options, String, default: lazy { ENV["PROJECT_NAME"] ? "-c -l debug" : "-c" }
 
     action :run do
-      execute "bundle exec kitchen #{command}#{instances ? " #{instances}" : ""}#{kitchen_options ? " #{kitchen_options}" : ""}" do
+      execute "bundle exec kitchen -l debug #{command}#{instances ? " #{instances}" : ""}#{kitchen_options ? " #{kitchen_options}" : ""}" do
         cwd kitchen_dir
         env({
           "KITCHEN_DRIVER" => driver,
