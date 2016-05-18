@@ -796,6 +796,15 @@ module ChefConfig
     config_context :chefdk do
     end
 
+    # Configuration options for Data Collector reporting. These settings allow
+    # the user to configure where to send their Data Collector data, what token
+    # to send, and whether Data Collector should report its findings in client
+    # mode vs. solo mode.
+    default :data_collector_server_url,       nil
+    default :data_collector_token,            nil
+    default :data_collector_mode,             :both
+    default :data_collector_raise_on_failure, false
+
     configurable(:http_proxy)
     configurable(:http_proxy_user)
     configurable(:http_proxy_pass)

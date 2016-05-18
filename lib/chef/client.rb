@@ -45,6 +45,7 @@ require "chef/formatters/doc"
 require "chef/formatters/minimal"
 require "chef/version"
 require "chef/resource_reporter"
+require "chef/data_collector"
 require "chef/audit/audit_reporter"
 require "chef/run_lock"
 require "chef/policy_builder"
@@ -263,6 +264,7 @@ class Chef
         run_ohai
 
         register unless Chef::Config[:solo_legacy_mode]
+        register_data_collector_reporter
 
         load_node
 
@@ -413,6 +415,13 @@ class Chef
       ].each do |r|
         events.register(r)
       end
+    end
+
+    # Register the data collector reporter to send event information to the
+    # data collector server
+    # @api private
+    def register_data_collector_reporter
+      events.register(Chef::DataCollector::Reporter.new) if Chef::DataCollector.register_reporter?
     end
 
     #
