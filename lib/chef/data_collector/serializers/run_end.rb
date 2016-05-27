@@ -63,7 +63,7 @@ class Chef
             "source"                 => collector_source,
             "status"                 => status,
             "total_resource_count"   => total_resource_count,
-            "updated_resource_count" => updated_resources.count
+            "updated_resource_count" => updated_resources.count,
           }
 
           document["error"] = formatted_exception if run_status.exception
@@ -76,7 +76,7 @@ class Chef
             "class"       => run_status.exception.class,
             "message"     => run_status.exception.message,
             "backtrace"   => run_status.exception.backtrace,
-            "description" => error_descriptions
+            "description" => error_descriptions,
           }
         end
       end

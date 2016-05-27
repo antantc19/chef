@@ -25,7 +25,7 @@ class Chef
       attr_reader :action, :current_resource, :elapsed_time, :new_resource, :status
       attr_accessor :conditional, :exception
 
-      def initialize(new_resource, action, current_resource=nil)
+      def initialize(new_resource, action, current_resource = nil)
         @new_resource     = new_resource
         @action           = action
         @current_resource = current_resource
@@ -64,7 +64,7 @@ class Chef
           "duration" => (elapsed_time * 1000).to_i.to_s,
           "delta"    => new_resource.respond_to?(:diff) ? new_resource.diff : "",
           "result"   => action.to_s,
-          "status"   => status
+          "status"   => status,
         }
 
         if new_resource.cookbook_name
@@ -82,4 +82,3 @@ class Chef
     end
   end
 end
-

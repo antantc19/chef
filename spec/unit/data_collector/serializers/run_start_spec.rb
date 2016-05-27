@@ -26,7 +26,7 @@ describe Chef::DataCollector::Serializers::RunStart do
   let(:run_status) { double("run_status") }
   let(:serializer) { described_class.new(run_status) }
   let(:required_fields) do
-    %w(
+    %w{
       chef_server_fqdn
       entity_uuid
       id
@@ -37,7 +37,7 @@ describe Chef::DataCollector::Serializers::RunStart do
       run_id
       source
       start_time
-    )
+    }
   end
   let(:optional_fields) { [] }
 

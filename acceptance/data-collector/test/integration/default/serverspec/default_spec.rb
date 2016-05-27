@@ -17,8 +17,8 @@
 # limitations under the License.
 #
 
-require 'json'
-require 'serverspec'
+require "json"
+require "serverspec"
 
 set :backend, :exec
 
@@ -61,28 +61,27 @@ shared_examples_for "counter checks" do |counters_to_check|
   end
 end
 
-
 describe "CCR with no data collector URL configured" do
   include_examples "successful chef run", "chef-client -z -c /etc/chef/no-endpoint.rb"
-  include_examples "counter checks", {"run_start" => nil, "run_converge.success" => nil, "run_converge.failure" => nil}
+  include_examples "counter checks", { "run_start" => nil, "run_converge.success" => nil, "run_converge.failure" => nil }
 end
 
 describe "CCR, local mode, config in solo mode" do
   include_examples "successful chef run", "chef-client -z -c /etc/chef/solo-mode.rb"
-  include_examples "counter checks", {"run_start" => 1, "run_converge.success" => 1, "run_converge.failure" => nil}
+  include_examples "counter checks", { "run_start" => 1, "run_converge.success" => 1, "run_converge.failure" => nil }
 end
 
 describe "CCR, local mode, config in client mode" do
   include_examples "successful chef run", "chef-client -z -c /etc/chef/client-mode.rb"
-  include_examples "counter checks", {"run_start" => nil, "run_converge.success" => nil, "run_converge.failure" => nil}
+  include_examples "counter checks", { "run_start" => nil, "run_converge.success" => nil, "run_converge.failure" => nil }
 end
 
 describe "CCR, local mode, config in both mode" do
   include_examples "successful chef run", "chef-client -z -c /etc/chef/both-mode.rb"
-  include_examples "counter checks", {"run_start" => 1, "run_converge.success" => 1, "run_converge.failure" => nil}
+  include_examples "counter checks", { "run_start" => 1, "run_converge.success" => 1, "run_converge.failure" => nil }
 end
 
 describe "CCR, local mode, config in solo mode, failed run" do
   include_examples "unsuccessful chef run", "chef-client -z -c /etc/chef/solo-mode.rb -r 'recipe[cookbook-that-does-not-exist::default]'"
-  include_examples "counter checks", {"run_start" => 1, "run_converge.success" => nil, "run_converge.failure" => 1}
+  include_examples "counter checks", { "run_start" => 1, "run_converge.success" => nil, "run_converge.failure" => 1 }
 end

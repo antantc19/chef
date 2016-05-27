@@ -26,7 +26,7 @@ describe Chef::DataCollector::Serializers::NodeUpdate do
   let(:run_status) { double("run_status") }
   let(:serializer) { described_class.new(run_status) }
   let(:required_fields) do
-    %w(
+    %w{
       entity_name
       entity_type
       entity_uuid
@@ -42,9 +42,9 @@ describe Chef::DataCollector::Serializers::NodeUpdate do
       source
       task
       user_agent
-    )
+    }
   end
-  let(:optional_fields) { %w(data) }
+  let(:optional_fields) { %w{data} }
 
   before do
     allow(serializer).to receive(:chef_server_fqdn).and_return("chef_server_fqdn")

@@ -29,8 +29,8 @@ class Chef
   class DataCollector
     def self.register_reporter?
       Chef::Config[:data_collector_server_url] &&
-      !Chef::Config[:why_run] &&
-      self.reporter_enabled_for_current_mode?
+        !Chef::Config[:why_run] &&
+        self.reporter_enabled_for_current_mode?
     end
 
     def self.reporter_enabled_for_current_mode?
@@ -166,7 +166,9 @@ class Chef
 
       def disable_reporter_on_error
         yield
-      rescue Timeout::Error, Errno::EINVAL, Errno::ECONNRESET, Errno::ECONNREFUSED, EOFError, Net::HTTPBadResponse, Net::HTTPHeaderSyntaxError, Net::ProtocolError => e
+      rescue Timeout::Error, Errno::EINVAL, Errno::ECONNRESET,
+             Errno::ECONNREFUSED, EOFError, Net::HTTPBadResponse,
+             Net::HTTPHeaderSyntaxError, Net::ProtocolError, OpenSSL::SSL::SSLError => e
         disable_data_collector_reporter
         code = if e.respond_to?(:response) && e.response.code
                  e.response.code.to_s

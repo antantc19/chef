@@ -28,7 +28,7 @@ describe Chef::DataCollector::Serializers::Base do
       expect { serializer.document }.to raise_error(RuntimeError)
     end
   end
-  
+
   describe '#message_type' do
     it "should raise an exception" do
       expect { serializer.message_type }.to raise_error(RuntimeError)

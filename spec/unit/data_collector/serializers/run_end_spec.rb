@@ -23,10 +23,10 @@ require "chef/data_collector/serializers/run_end"
 
 describe Chef::DataCollector::Serializers::RunEnd do
   let(:node)       { double("node") }
-  let(:run_list)   { double("run_list")}
+  let(:run_list)   { double("run_list") }
   let(:run_status) { double("run_status") }
   let(:serializer) { described_class.new({}) }
-  let(:resource)   { double("resource")}
+  let(:resource)   { double("resource") }
 
   before do
     allow(serializer).to receive(:chef_server_fqdn).and_return("chef_server_fqdn")
@@ -56,7 +56,7 @@ describe Chef::DataCollector::Serializers::RunEnd do
 
     context "when the run was successful" do
       let(:required_fields) do
-        %w(
+        %w{
           chef_server_fqdn
           entity_uuid
           id
@@ -74,9 +74,9 @@ describe Chef::DataCollector::Serializers::RunEnd do
           status
           total_resource_count
           updated_resource_count
-        )
+        }
       end
-      let(:optional_fields) { %w(error) }
+      let(:optional_fields) { %w{error} }
 
       before do
         allow(run_status).to receive(:exception).and_return(nil)
@@ -95,7 +95,7 @@ describe Chef::DataCollector::Serializers::RunEnd do
 
     context "when the run was not successful" do
       let(:required_fields) do
-        %w(
+        %w{
           chef_server_fqdn
           entity_uuid
           id
@@ -114,7 +114,7 @@ describe Chef::DataCollector::Serializers::RunEnd do
           status
           total_resource_count
           updated_resource_count
-        )
+        }
       end
       let(:optional_fields) { [] }
 

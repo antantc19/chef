@@ -173,7 +173,7 @@ describe Chef::DataCollector::Reporter do
   end
 
   describe '#run_completed' do
-    it 'sends the run completion' do
+    it "sends the run completion" do
       expect(reporter).to receive(:send_run_completion)
       reporter.run_completed("fake_node")
     end
@@ -217,7 +217,7 @@ describe Chef::DataCollector::Reporter do
   describe '#resource_up_to_date' do
     let(:new_resource)    { double("new_resource") }
     let(:action)          { double("action") }
-    let(:resource_report) { double("resource_report")}
+    let(:resource_report) { double("resource_report") }
 
     before do
       allow(reporter).to receive(:increment_resource_count)
@@ -252,7 +252,7 @@ describe Chef::DataCollector::Reporter do
     let(:new_resource)    { double("new_resource") }
     let(:action)          { double("action") }
     let(:conditional)     { double("conditional") }
-    let(:resource_report) { double("resource_report")}
+    let(:resource_report) { double("resource_report") }
 
     before do
       allow(reporter).to receive(:increment_resource_count)
@@ -294,7 +294,7 @@ describe Chef::DataCollector::Reporter do
   end
 
   describe '#resource_updated' do
-    let(:resource_report) { double("resource_report")}
+    let(:resource_report) { double("resource_report") }
 
     before do
       allow(reporter).to receive(:current_resource_report).and_return(resource_report)
@@ -316,9 +316,8 @@ describe Chef::DataCollector::Reporter do
     let(:new_resource)    { double("new_resource") }
     let(:action)          { double("action") }
     let(:exception)       { double("exception") }
-    let(:error_mapper)    { double("error_mapper")}
-    let(:resource_report) { double("resource_report")}
-
+    let(:error_mapper)    { double("error_mapper") }
+    let(:resource_report) { double("resource_report") }
 
     before do
       allow(reporter).to receive(:increment_resource_count)
@@ -490,7 +489,9 @@ describe Chef::DataCollector::Reporter do
       end
     end
 
-    [ Timeout::Error, Errno::EINVAL, Errno::ECONNRESET, Errno::ECONNREFUSED, EOFError, Net::HTTPBadResponse, Net::HTTPHeaderSyntaxError, Net::ProtocolError ].each do |exception_class|
+    [ Timeout::Error, Errno::EINVAL, Errno::ECONNRESET,
+      Errno::ECONNREFUSED, EOFError, Net::HTTPBadResponse,
+      Net::HTTPHeaderSyntaxError, Net::ProtocolError, OpenSSL::SSL::SSLError ].each do |exception_class|
       context "when the block raises a #{exception_class} exception" do
         it "disables the reporter" do
           expect(reporter).to receive(:disable_data_collector_reporter)

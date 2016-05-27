@@ -57,7 +57,7 @@ class Chef
             "source"            => collector_source,
             "task"              => "update",
             "user_agent"        => Chef::HTTP::HTTPRequest::DEFAULT_UA,
-            "data"              => node
+            "data"              => node,
           }
         end
       end

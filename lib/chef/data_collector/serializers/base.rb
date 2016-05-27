@@ -18,8 +18,8 @@
 # limitations under the License.
 #
 
-require 'json'
-require 'securerandom'
+require "json"
+require "securerandom"
 
 class Chef
   class DataCollector
@@ -41,7 +41,7 @@ class Chef
           return URI(Chef::Config[:chef_server_url]).host unless Chef::Config[:chef_server_url].nil?
           return "localhost" unless defined?(run_status)
 
-          run_status.node["fqdn"] 
+          run_status.node["fqdn"]
         end
 
         def organization
@@ -55,7 +55,7 @@ class Chef
         def chef_server_organization
           return nil unless Chef::Config[:chef_server_url]
 
-          Chef::Config[:chef_server_url].match(%r(/organizations/(\w+))).nil? ? "unknown_organization" : $1
+          Chef::Config[:chef_server_url].match(%r{/organizations/(\w+)}).nil? ? "unknown_organization" : $1
         end
 
         def collector_source
