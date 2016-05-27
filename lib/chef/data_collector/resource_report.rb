@@ -1,6 +1,6 @@
 #
 # Author:: Adam Leff (<adamleff@chef.io>)
-# Auther:: Ryan Cragun (<ryan@chef.io>)
+# Author:: Ryan Cragun (<ryan@chef.io>)
 #
 # Copyright:: Copyright 2012-2016, Chef Software Inc.
 # License:: Apache License, Version 2.0
