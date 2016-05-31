@@ -66,7 +66,7 @@ describe Chef::DataCollector::Serializers::Base do
   describe '#data_collector_organization' do
     context "when the org is specified in the config" do
       it "returns the org from the config" do
-        Chef::Config[:data_collector_organization] = "org1"
+        Chef::Config[:data_collector][:organization] = "org1"
         expect(serializer.data_collector_organization).to eq("org1")
       end
     end

@@ -25,14 +25,14 @@ describe Chef::DataCollector do
   describe ".register_reporter?" do
     context "when no data collector URL is configured" do
       it "returns false" do
-        Chef::Config[:data_collector_server_url] = nil
+        Chef::Config[:data_collector][:server_url] = nil
         expect(Chef::DataCollector.register_reporter?).to be_falsey
       end
     end
 
     context "when a data collector URL is configured" do
       before do
-        Chef::Config[:data_collector_server_url] = "http://data_collector"
+        Chef::Config[:data_collector][:server_url] = "http://data_collector"
       end
 
       context "when operating in why_run mode" do
@@ -73,21 +73,21 @@ describe Chef::DataCollector do
 
       context "when data_collector_mode is :solo" do
         it "returns true" do
-          Chef::Config[:data_collector_mode] = :solo
+          Chef::Config[:data_collector][:mode] = :solo
           expect(Chef::DataCollector.reporter_enabled_for_current_mode?).to eq(true)
         end
       end
 
       context "when data_collector_mode is :client" do
         it "returns false" do
-          Chef::Config[:data_collector_mode] = :client
+          Chef::Config[:data_collector][:mode] = :client
           expect(Chef::DataCollector.reporter_enabled_for_current_mode?).to eq(false)
         end
       end
 
       context "when data_collector_mode is :both" do
         it "returns true" do
-          Chef::Config[:data_collector_mode] = :both
+          Chef::Config[:data_collector][:mode] = :both
           expect(Chef::DataCollector.reporter_enabled_for_current_mode?).to eq(true)
         end
       end
@@ -101,21 +101,21 @@ describe Chef::DataCollector do
 
       context "when data_collector_mode is :solo" do
         it "returns true" do
-          Chef::Config[:data_collector_mode] = :solo
+          Chef::Config[:data_collector][:mode] = :solo
           expect(Chef::DataCollector.reporter_enabled_for_current_mode?).to eq(true)
         end
       end
 
       context "when data_collector_mode is :client" do
         it "returns false" do
-          Chef::Config[:data_collector_mode] = :client
+          Chef::Config[:data_collector][:mode] = :client
           expect(Chef::DataCollector.reporter_enabled_for_current_mode?).to eq(false)
         end
       end
 
       context "when data_collector_mode is :both" do
         it "returns true" do
-          Chef::Config[:data_collector_mode] = :both
+          Chef::Config[:data_collector][:mode] = :both
           expect(Chef::DataCollector.reporter_enabled_for_current_mode?).to eq(true)
         end
       end
@@ -129,21 +129,21 @@ describe Chef::DataCollector do
 
       context "when data_collector_mode is :solo" do
         it "returns false" do
-          Chef::Config[:data_collector_mode] = :solo
+          Chef::Config[:data_collector][:mode] = :solo
           expect(Chef::DataCollector.reporter_enabled_for_current_mode?).to eq(false)
         end
       end
 
       context "when data_collector_mode is :client" do
         it "returns true" do
-          Chef::Config[:data_collector_mode] = :client
+          Chef::Config[:data_collector][:mode] = :client
           expect(Chef::DataCollector.reporter_enabled_for_current_mode?).to eq(true)
         end
       end
 
       context "when data_collector_mode is :both" do
         it "returns true" do
-          Chef::Config[:data_collector_mode] = :both
+          Chef::Config[:data_collector][:mode] = :both
           expect(Chef::DataCollector.reporter_enabled_for_current_mode?).to eq(true)
         end
       end
@@ -500,7 +500,7 @@ describe Chef::DataCollector::Reporter do
 
         context "when raise-on-failure is enabled" do
           it "logs an error and raises" do
-            Chef::Config[:data_collector_raise_on_failure] = true
+            Chef::Config[:data_collector][:raise_on_failure] = true
             expect(Chef::Log).to receive(:error)
             expect { reporter.send(:disable_reporter_on_error) { raise exception_class.new("bummer") } }.to raise_error(exception_class)
           end
@@ -508,7 +508,7 @@ describe Chef::DataCollector::Reporter do
 
         context "when raise-on-failure is disabled" do
           it "logs a warning and does not raise an exception" do
-            Chef::Config[:data_collector_raise_on_failure] = false
+            Chef::Config[:data_collector][:raise_on_failure] = false
             expect(Chef::Log).to receive(:warn)
             expect { reporter.send(:disable_reporter_on_error) { raise exception_class.new("bummer") } }.not_to raise_error
           end

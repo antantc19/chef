@@ -417,13 +417,6 @@ class Chef
       end
     end
 
-    # Register the data collector reporter to send event information to the
-    # data collector server
-    # @api private
-    def register_data_collector_reporter
-      events.register(Chef::DataCollector::Reporter.new) if Chef::DataCollector.register_reporter?
-    end
-
     #
     # Callback to fire notifications that the Chef run is starting
     #
@@ -965,6 +958,12 @@ class Chef
       require "chef/win32/security"
 
       Chef::ReservedNames::Win32::Security.has_admin_privileges?
+    end
+
+    # Register the data collector reporter to send event information to the
+    # data collector server
+    def register_data_collector_reporter
+      events.register(Chef::DataCollector::Reporter.new) if Chef::DataCollector.register_reporter?
     end
   end
 end
