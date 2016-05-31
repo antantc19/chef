@@ -19,11 +19,9 @@
 #
 
 require "uri"
-require "chef/event_dispatch/base"
-require "chef/data_collector/resource_report"
-require "chef/data_collector/serializers/node_update"
-require "chef/data_collector/serializers/run_end"
-require "chef/data_collector/serializers/run_start"
+require_relative "event_dispatch/base"
+require_relative "data_collector/resource_report"
+require_relative "data_collector/serializers"
 
 class Chef
   class DataCollector
@@ -64,7 +62,7 @@ class Chef
         update_run_status(current_run_status)
 
         disable_reporter_on_error do
-          send_to_data_collector(Serializers::RunStart.new(run_status))
+          send_to_data_collector(Serializers.run_start_message(run_status))
         end
       end
 
@@ -188,11 +186,11 @@ class Chef
         end
       end
 
-      def send_to_data_collector(message)
+      def send_to_data_collector(message_json)
         return unless data_collector_accessible?
 
-        Chef::Log.debug("data_collector_reporter: POSTing the following message to #{data_collector_server_url}: #{message.to_json}")
-        http.post(nil, message.to_json, headers)
+        Chef::Log.debug("data_collector_reporter: POSTing the following message to #{data_collector_server_url}: #{message_json}")
+        http.post(nil, message_json, headers)
       end
 
       def send_run_completion
@@ -201,17 +199,19 @@ class Chef
         # we have nothing to report.
         return unless run_status
 
-        send_to_data_collector(Serializers::NodeUpdate.new(run_status))
-        send_to_data_collector(
-          Serializers::RunEnd.new(
-            run_status: run_status,
-            expanded_run_list: expanded_run_list,
-            total_resource_count: resource_count,
-            updated_resources: updated_resources,
-            status: status,
-            error_descriptions: error_descriptions
+        if data_collector_accessible?
+          send_to_data_collector(Serializers::NodeUpdate.new(run_status).to_json)
+          send_to_data_collector(
+            Serializers.run_end_message(
+              run_status,
+              expanded_run_list: expanded_run_list,
+              total_resource_count: resource_count,
+              updated_resources: updated_resources,
+              status: status,
+              error_descriptions: error_descriptions
+            )
           )
-        )
+        end
       end
 
       def headers(additional_headers = {})

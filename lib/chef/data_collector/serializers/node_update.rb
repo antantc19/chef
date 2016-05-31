@@ -1,65 +1,40 @@
-#
-# Author:: Adam Leff (<adamleff@chef.io)
-# Author:: Ryan Cragun (<ryan@chef.io>)
-#
-# Copyright:: Copyright 2012-2016, Chef Software Inc.
-# License:: Apache License, Version 2.0
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
+require_relative "base"
 
-require "securerandom"
-require "chef/data_collector/serializers/base"
+module DataCollector
+  module Serializer
+    module NodeUpdate
+      include Base
 
-class Chef
-  class DataCollector
-    class Serializers
-      class NodeUpdate < Base
+      def self.serialize(run_status)
+        metadata = get_metadata
 
-        attr_reader :run_status
-
-        def initialize(run_status)
-          @run_status = run_status
-        end
-
-        def message_type
-          "action"
-        end
-
-        def node
-          run_status.node
-        end
-
-        def document
-          {
-            "entity_name"       => node.name,
-            "entity_type"       => "node",
-            "entity_uuid"       => node_uuid,
-            "id"                => SecureRandom.uuid,
-            "message_version"   => "1.0.0",
-            "message_type"      => message_type,
-            "organization_name" => organization,
-            "recorded_at"       => Time.now.utc.iso8601,
-            "remote_hostname"   => node["fqdn"],
-            "requestor_name"    => node.name,
-            "requestor_type"    => "client",
-            "service_hostname"  => chef_server_fqdn,
-            "source"            => collector_source,
-            "task"              => "update",
-            "user_agent"        => Chef::HTTP::HTTPRequest::DEFAULT_UA,
-            "data"              => node,
-          }
-        end
+        {
+          chef_server_fqdn:  chef_server_fqdn,
+          entity_uuid:       metadata["node_uuid"],
+          message_version:   "1.0.0",
+          node_name:         node.name,
+          organization_name: organization,
+          source:            solo_run? ? "chef_solo" : "chef_client",
+          chef_server_fqdn:  chef_server_fqdn,
+          entity_uuid:       metadata["node_uuid"],
+          message_version:   "1.0.0",
+          node_name:         node.name,
+          organization_name: organization,
+          source:            solo_run? ? "chef_solo" : "chef_client",
+          entity_name:      run_status.node.name,
+          entity_type:      "node",
+          id:               SecureRandom.uuid,
+          message_version:  "1.0.0",
+          message_type:     "action",
+          recorded_at:      Time.now.utc.iso8601,
+          remote_hostname:  run_status.node["fqdn"],
+          requestor_name:   run_status.node.name,
+          requestor_type:   "client",
+          service_hostname: chef_server_fqdn,
+          task:             "update"
+          user_agent:       Chef::HTTP::HTTPRequest::DEFAULT_UA,
+          data:             run_status.node,
+        )
       end
     end
   end
