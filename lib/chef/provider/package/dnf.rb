@@ -31,7 +31,7 @@ class Chef
           include Chef::Mixin::ShellOut
 
           def whatprovides(package_name)
-            provides = dnf("repoquery -q --lastest-limit 1 --whatprovides", package_name)
+            provides = dnf("repoquery -q --latest-limit 1 --whatprovides", package_name)
             res = {}
             res[:version] = nil
             res[:real_name] = ""
