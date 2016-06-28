@@ -166,8 +166,7 @@ User dsctestusercreate
 EOH
   }
 
-  let(:dsc_user_config_data) {
-    <<-EOH
+  let(:dsc_user_config_data) { <<-EOH
 @{
     AllNodes = @(
         @{

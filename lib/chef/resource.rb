@@ -1270,7 +1270,7 @@ class Chef
       run_context.immediate_notifications(self).each { |n|
         n.resolve_resource_reference(run_context.resource_collection)
       }
-      run_context.delayed_notifications(self).each {|n|
+      run_context.delayed_notifications(self).each { |n|
         n.resolve_resource_reference(run_context.resource_collection)
       }
     end
