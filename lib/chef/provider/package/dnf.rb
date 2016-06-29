@@ -30,7 +30,7 @@ class Chef
           include Singleton
           include Chef::Mixin::ShellOut
 
-          DNF_HELPER = File.expand_path(File.join(File.dirname(__FILE__), "dnf_helper.rb")).freeze
+          DNF_HELPER = ::File.expand_path(::File.join(::File.dirname(__FILE__), "dnf_helper.rb")).freeze
 
           def start
             @stdin, @stdout, @stderr, @wait_thr = Open3.popen3(DNF_HELPER)
