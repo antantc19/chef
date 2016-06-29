@@ -30,26 +30,32 @@ class Chef
           include Singleton
           include Chef::Mixin::ShellOut
 
+          DNF_HELPER = File.expand_path(File.join(File.dirname(__FILE__), "dnf_helper.rb")).freeze
+
+          def start
+            @stdin, @stdout, @stderr, @wait_thr = Open3.popen3(DNF_HELPER)
+          end
+
+          def stop
+            @stdin.syswrite "exit\n"
+            @stdin.close
+            @stdout.close
+            @stderr.close
+            @wait_thr.value
+          end
+
+          def check
+            start if @stdin.nil?
+          end
+
           def whatprovides(package_name)
-            provides = dnf("repoquery -q --latest-limit 1 --whatprovides", package_name)
-            res = {}
-            res[:version] = nil
-            res[:real_name] = ""
-            provides.stdout.each_line do |line|
-              if line =~ /^(\S+)\-(\S+)\-(\S+)\.(\S+)/
-                res[:real_name] = $1
-                res[:version] = "#{$2}-#{$3}.#{$4}"
-              end
-            end
-            res
-          end
-
-          def a_to_s(*args)
-            args.flatten.reject { |i| i.nil? || i == "" }.join(" ")
-          end
-
-          def dnf(*args)
-            shell_out!(a_to_s("dnf", *args))
+            check
+            @stdin.syswrite "repoquery #{package_name}\n"
+            res = @stdout.sysread.split
+            return {
+              real_name: res[0],
+              version: res[1],
+            }
           end
         end
 
