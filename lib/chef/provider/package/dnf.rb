@@ -51,7 +51,7 @@ class Chef
           def whatprovides(package_name)
             check
             @stdin.syswrite "repoquery #{package_name}\n"
-            res = @stdout.sysread.split
+            res = @stdout.sysread(4096).split
             return {
               real_name: res[0],
               version: res[1],
