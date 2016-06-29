@@ -4,7 +4,7 @@ def whatprovides(package_name)
   provides = `dnf repoquery -q --latest-limit 1 --whatprovides #{package_name}`
   provides.each_line do |line|
     if line =~ /^(\S+)\-(\S+)\-(\S+)\.(\S+)/
-      print "#{$1} #{$2}-#{$3}.#{$4}"
+      puts "#{$1} #{$2}-#{$3}.#{$4}"
       break
     end
   end

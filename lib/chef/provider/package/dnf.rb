@@ -28,34 +28,41 @@ class Chef
 
         class PythonHelper
           include Singleton
-          include Chef::Mixin::ShellOut
+
+          attr_accessor :stdin
+          attr_accessor :stdout
+          attr_accessor :stderr
+          attr_accessor :wait_thr
 
           DNF_HELPER = ::File.expand_path(::File.join(::File.dirname(__FILE__), "dnf_helper.rb")).freeze
+          HELPER_COMMAND = "#{RbConfig::CONFIG["bindir"]}/ruby #{DNF_HELPER}"
 
           def start
-            @stdin, @stdout, @stderr, @wait_thr = Open3.popen3(DNF_HELPER)
+            @stdin, @stdout, @stderr, @wait_thr = Open3.popen3(HELPER_COMMAND)
           end
 
           def stop
-            @stdin.syswrite "exit\n"
-            @stdin.close
-            @stdout.close
-            @stderr.close
-            @wait_thr.value
+            stdin.syswrite "exit\n"
+            stdin.close
+            stdout.close
+            stderr.close
+            wait_thr.value
           end
 
           def check
-            start if @stdin.nil?
+            start if stdin.nil?
           end
 
           def whatprovides(package_name)
             check
-            @stdin.syswrite "repoquery #{package_name}\n"
-            res = @stdout.sysread(4096).split
+            stdin.syswrite "whatprovides #{package_name}\n"
+            res = stdout.sysread(4096).split
             return {
               real_name: res[0],
               version: res[1],
             }
+          rescue EOFError
+            raise "dnf helper crashed: #{stderr.sysread(4096)}"
           end
         end
 
