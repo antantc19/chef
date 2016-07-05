@@ -35,9 +35,10 @@ class Chef
           attr_accessor :wait_thr
 
           DNF_HELPER = ::File.expand_path(::File.join(::File.dirname(__FILE__), "dnf_helper.py")).freeze
+          DNF_COMMAND = "#{which("python3")} #{DNF_HELPER}"
 
           def start
-            @stdin, @stdout, @stderr, @wait_thr = Open3.popen3(DNF_HELPER)
+            @stdin, @stdout, @stderr, @wait_thr = Open3.popen3(DNF_COMMAND)
           end
 
           def stop
