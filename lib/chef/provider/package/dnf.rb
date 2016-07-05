@@ -34,7 +34,7 @@ class Chef
           attr_accessor :stderr
           attr_accessor :wait_thr
 
-          DNF_HELPER = ::File.expand_path(::File.join(::File.dirname(__FILE__), "dnf_helper.rb")).freeze
+          DNF_HELPER = ::File.expand_path(::File.join(::File.dirname(__FILE__), "dnf_helper.py")).freeze
           HELPER_COMMAND = "#{RbConfig::CONFIG["bindir"]}/ruby #{DNF_HELPER}"
 
           def start
