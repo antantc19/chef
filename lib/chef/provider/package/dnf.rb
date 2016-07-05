@@ -28,6 +28,7 @@ class Chef
 
         class PythonHelper
           include Singleton
+          extend Chef::Mixin::Which
 
           attr_accessor :stdin
           attr_accessor :stdout
