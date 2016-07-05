@@ -35,10 +35,9 @@ class Chef
           attr_accessor :wait_thr
 
           DNF_HELPER = ::File.expand_path(::File.join(::File.dirname(__FILE__), "dnf_helper.py")).freeze
-          HELPER_COMMAND = "#{RbConfig::CONFIG["bindir"]}/ruby #{DNF_HELPER}"
 
           def start
-            @stdin, @stdout, @stderr, @wait_thr = Open3.popen3(HELPER_COMMAND)
+            @stdin, @stdout, @stderr, @wait_thr = Open3.popen3(DNF_HELPER)
           end
 
           def stop
