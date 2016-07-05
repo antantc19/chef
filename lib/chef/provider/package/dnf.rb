@@ -39,7 +39,7 @@ class Chef
           DNF_COMMAND = "#{which("python3")} #{DNF_HELPER}"
 
           def start
-            ENV["PYHTONUNBUFFERED"] = 1
+            ENV["PYTHONUNBUFFERED"] = "1"
             @stdin, @stdout, @stderr, @wait_thr = Open3.popen3(DNF_COMMAND)
           end
 
