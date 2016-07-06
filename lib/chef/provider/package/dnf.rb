@@ -17,6 +17,7 @@
 require "chef/provider/package"
 require "chef/resource/dnf_package"
 require "chef/mixin/which"
+require "timeout"
 
 class Chef
   class Provider
@@ -43,8 +44,8 @@ class Chef
             @stdin, @stdout, @stderr, @wait_thr = Open3.popen3(DNF_COMMAND)
           end
 
-          def stop
-            stdin.syswrite "exit\n"
+          def reap
+            Process.kill("KILL", wait_thr.pid)
             stdin.close
             stdout.close
             stderr.close
@@ -56,15 +57,32 @@ class Chef
           end
 
           def whatprovides(package_name)
-            check
-            stdin.syswrite "whatprovides #{package_name}\n"
-            res = stdout.sysread(4096).split
+            res = []
+            with_helper do
+              stdin.syswrite "whatprovides #{package_name}\n"
+              res = stdout.sysread(4096).split
+            end
             return {
               real_name: res[0],
               version: res[1],
             }
-          rescue EOFError
-            raise "dnf helper crashed: #{stderr.sysread(4096)}"
+          end
+
+          def restart
+            reap unless stdin.nil?
+            start
+          end
+
+          def with_helper
+            max_retries ||= 5
+            Timeout.timeout(60) do
+              check
+              yield
+            end
+          rescue EOFError, Errno::EPIPE, Timeout::Error => e
+            raise e unless max_retries -= 1 > 0
+            restart
+            retry
           end
         end
 
