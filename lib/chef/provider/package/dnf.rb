@@ -80,7 +80,7 @@ class Chef
               yield
             end
           rescue EOFError, Errno::EPIPE, Timeout::Error => e
-            raise e unless max_retries -= 1 > 0
+            raise e unless ( max_retries -= 1 ) > 0
             restart
             retry
           end
