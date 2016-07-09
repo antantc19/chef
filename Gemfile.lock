@@ -218,7 +218,7 @@ GEM
     mini_portile2 (2.1.0)
     mixlib-authentication (1.4.1)
       mixlib-log
-    mixlib-cli (1.7.0)
+    mixlib-cli (1.6.0)
     mixlib-config (2.2.1)
     mixlib-install (1.1.0)
       artifactory
