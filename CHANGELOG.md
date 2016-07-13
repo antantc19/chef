@@ -1,5 +1,12 @@
 # Change Log
 
+## [v12.12.25](https://github.com/chef/chef/tree/v12.12.25) (2016-07-13)
+[Full Changelog](https://github.com/chef/chef/compare/v12.12.13...v12.12.25)
+
+**Fixed Bugs:**
+
+- add back method_missing support to set_unless [\#5103](https://github.com/chef/chef/pull/5103) ([lamont-granquist](https://github.com/lamont-granquist))
+
 ## [v12.12.15](https://github.com/chef/chef/tree/v12.12.15) (2016-07-08)
 [Full Changelog](https://github.com/chef/chef/compare/v12.12.13...v12.12.15)
 
