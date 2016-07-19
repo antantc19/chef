@@ -48,4 +48,14 @@ describe Chef::Provider::User::Useradd do
       provider.manage_user
     end
   end
+
+  describe "when we do not support home directory management" do
+    before do
+      @new_resource.manage_home(false)
+    end
+
+    it "should set useradd -M" do
+      @provider.useradd_options.should == " -M"
+    end
+  end
 end

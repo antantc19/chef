@@ -42,7 +42,7 @@ class Chef
         @force = false
         @non_unique = false
         @supports = {
-          :manage_home => false,
+          :manage_home => true,
           :non_unique => false,
         }
         @iterations = 27855
